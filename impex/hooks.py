@@ -42,7 +42,7 @@ app_license = "MIT"
 
 # website user home page (by Role)
 # role_home_page = {
-#	"Role": "home_page"
+# 	"Role": "home_page"
 # }
 
 # Generators
@@ -56,8 +56,8 @@ app_license = "MIT"
 
 # add methods and filters to jinja environment
 # jinja = {
-#	"methods": "impex.utils.jinja_methods",
-#	"filters": "impex.utils.jinja_filters"
+# 	"methods": "impex.utils.jinja_methods",
+# 	"filters": "impex.utils.jinja_filters"
 # }
 
 # Installation
@@ -99,11 +99,11 @@ app_license = "MIT"
 # Permissions evaluated in scripted ways
 
 # permission_query_conditions = {
-#	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
+# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
 # }
 #
 # has_permission = {
-#	"Event": "frappe.desk.doctype.event.event.has_permission",
+# 	"Event": "frappe.desk.doctype.event.event.has_permission",
 # }
 
 # DocType Class
@@ -111,7 +111,7 @@ app_license = "MIT"
 # Override standard doctype classes
 
 # override_doctype_class = {
-#	"ToDo": "custom_app.overrides.CustomToDo"
+# 	"ToDo": "custom_app.overrides.CustomToDo"
 # }
 
 # Document Events
@@ -119,32 +119,32 @@ app_license = "MIT"
 # Hook on document methods and events
 
 # doc_events = {
-#	"*": {
-#		"on_update": "method",
-#		"on_cancel": "method",
-#		"on_trash": "method"
-#	}
+# 	"*": {
+# 		"on_update": "method",
+# 		"on_cancel": "method",
+# 		"on_trash": "method"
+# 	}
 # }
 
 # Scheduled Tasks
 # ---------------
 
 # scheduler_events = {
-#	"all": [
-#		"impex.tasks.all"
-#	],
-#	"daily": [
-#		"impex.tasks.daily"
-#	],
-#	"hourly": [
-#		"impex.tasks.hourly"
-#	],
-#	"weekly": [
-#		"impex.tasks.weekly"
-#	],
-#	"monthly": [
-#		"impex.tasks.monthly"
-#	],
+# 	"all": [
+# 		"impex.tasks.all"
+# 	],
+# 	"daily": [
+# 		"impex.tasks.daily"
+# 	],
+# 	"hourly": [
+# 		"impex.tasks.hourly"
+# 	],
+# 	"weekly": [
+# 		"impex.tasks.weekly"
+# 	],
+# 	"monthly": [
+# 		"impex.tasks.monthly"
+# 	],
 # }
 
 # Testing
@@ -155,15 +155,21 @@ app_license = "MIT"
 # Overriding Methods
 # ------------------------------
 #
-# override_whitelisted_methods = {
-#	"frappe.desk.doctype.event.event.get_events": "impex.event.get_events"
-# }
+override_whitelisted_methods = {
+    "erpnext.controllers.queries.item_query": "impex.extends.queries.item_query",
+    "frappe.desk.search.search_link": "impex.extends.search.search_link",
+}
+
+standard_queries = {
+    "Item": "impex.extends.queries.item_query",
+}
+
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
 # along with any modifications made in other Frappe apps
 # override_doctype_dashboards = {
-#	"Task": "impex.task.get_dashboard_data"
+# 	"Task": "impex.task.get_dashboard_data"
 # }
 
 # exempt linked doctypes from being automatically cancelled
@@ -189,29 +195,29 @@ app_license = "MIT"
 # --------------------
 
 # user_data_fields = [
-#	{
-#		"doctype": "{doctype_1}",
-#		"filter_by": "{filter_by}",
-#		"redact_fields": ["{field_1}", "{field_2}"],
-#		"partial": 1,
-#	},
-#	{
-#		"doctype": "{doctype_2}",
-#		"filter_by": "{filter_by}",
-#		"partial": 1,
-#	},
-#	{
-#		"doctype": "{doctype_3}",
-#		"strict": False,
-#	},
-#	{
-#		"doctype": "{doctype_4}"
-#	}
+# 	{
+# 		"doctype": "{doctype_1}",
+# 		"filter_by": "{filter_by}",
+# 		"redact_fields": ["{field_1}", "{field_2}"],
+# 		"partial": 1,
+# 	},
+# 	{
+# 		"doctype": "{doctype_2}",
+# 		"filter_by": "{filter_by}",
+# 		"partial": 1,
+# 	},
+# 	{
+# 		"doctype": "{doctype_3}",
+# 		"strict": False,
+# 	},
+# 	{
+# 		"doctype": "{doctype_4}"
+# 	}
 # ]
 
 # Authentication and authorization
 # --------------------------------
 
 # auth_hooks = [
-#	"impex.auth.validate"
+# 	"impex.auth.validate"
 # ]
