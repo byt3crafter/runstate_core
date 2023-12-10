@@ -127,23 +127,24 @@ doc_events = {
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"impex.tasks.all"
-# 	],
-# 	"daily": [
-# 		"impex.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"impex.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"impex.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"impex.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+    # "all": [
+    # 	"impex.tasks.all"
+    # ],
+    # "daily": [
+    # 	"impex.tasks.daily"
+    # ],
+    # "hourly": [
+    # 	"impex.tasks.hourly"
+    # ],
+    # "weekly": [
+    # 	"impex.tasks.weekly"
+    # ],
+    # "monthly": [
+    # 	"impex.tasks.monthly"
+    # ],
+    "cron": {"0 21 * * 0": "impex.tasks.weekly"},
+}
 
 # Testing
 # -------
