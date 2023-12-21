@@ -220,3 +220,25 @@ standard_queries = {
 # auth_hooks = [
 # 	"impex.auth.validate"
 # ]
+
+
+fixtures = [
+    {
+        "dt": "Custom Field",
+        "filters": [
+            [
+                "name",
+                "in",
+                [
+                    "Item Barcode-barcode_image",
+                    "Purchase Receipt Item-custom_label_qty",
+                ],
+            ]
+        ],
+    },
+    {"dt": "Print Format", "filters": [["name", "in", ["Bcode Item", "Bcode PREC"]]]},
+    {
+        "dt": "Client Script",
+        "filters": [["name", "in", ["Item-Form", "Purchase Receipt Barcode"]]],
+    },
+]
