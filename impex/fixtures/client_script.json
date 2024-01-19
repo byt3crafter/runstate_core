@@ -1,0 +1,24 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Item",
+  "enabled": 1,
+  "modified": "2023-12-21 17:14:54.128456",
+  "module": "Barcode",
+  "name": "Item-Form",
+  "script": "frappe.ui.form.on(\"Item\",{\r\n\trefresh: function(frm){\r\n\t    if (frm.doc.barcodes.length === 0){\r\n\t\t    frm.add_custom_button(\"Generate Barcode\", function(){\r\n    \t\t\tfrappe.call({\r\n    \t\t\t\tmethod: \"impex.barcode.barcode.generate_barcode\",\r\n    \t\t\t\targs: {\"docname\": frm.doc.name},\r\n    \t\t\t\tcallback: function(r){\r\n                        console.log(r.message)\r\n    \t\t\t\t\tvar row = frm.add_child(\"barcodes\");\r\n                        row.barcode = r.message;\r\n                        row.barcode_image = r.message.toString();\r\n                        frm.refresh_field('barcodes');\r\n                        cur_frm.$wrapper.find('[data-fieldname=\"barcode_image\"]')[1].click()\r\n                        cur_frm.$wrapper.find('[data-fieldname=\"barcode_image\"]')[1].click()\r\n                        frm.save()\r\n    \t\t\t\t}\r\n    \r\n    \t\t\t})\r\n    \t\t}, __(\"Actions\"))\r\n\t    }\r\n\t}\r\n})",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Purchase Receipt",
+  "enabled": 1,
+  "modified": "2023-12-21 17:07:02.948962",
+  "module": "Barcode",
+  "name": "Purchase Receipt Barcode",
+  "script": "frappe.ui.form.on('Purchase Receipt', {\n\trefresh: function(frm) {\n        frm.doc.items.forEach(function(item) {\n            // Directly modify the field value without using frappe.model.set_value\n            item.custom_label_qty = item.qty;\n        });\n        // Refresh the field to reflect changes in the UI\n        frm.refresh_field('items');\n    }\n})",
+  "view": "Form"
+ }
+]
