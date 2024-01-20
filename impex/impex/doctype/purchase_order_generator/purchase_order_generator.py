@@ -3,11 +3,67 @@
 
 import frappe
 from frappe.model.document import Document
+from erpnext.setup.doctype.item_group.item_group import get_child_item_groups
 
 
 class PurchaseOrderGenerator(Document):
     def validate(self):
         pass
+
+    def on_submit(self):
+        self.create_purchase_orders()
+
+    def create_purchase_orders(self):
+        # group items by supplier and create a purchase order for each supplier
+        items = {}
+        for item in self.items:
+            if item.purchase_supplier not in items:
+                items[item.purchase_supplier] = []
+            items[item.purchase_supplier].append(item)
+
+        for supplier in items:
+            purchase_order = frappe.new_doc("Purchase Order")
+            purchase_order.supplier = supplier
+            purchase_order.company = self.company
+            purchase_order.posting_date = self.date
+            purchase_order.set("items", [])
+            for item in items[supplier]:
+                purchase_order.append(
+                    "items",
+                    {
+                        "item_code": item.item_code,
+                        "item_name": item.item_name,
+                        "item_group": item.item_group,
+                        "qty": item.purchase_qty,
+                        "rate": item.purchase_rate,
+                        "schedule_date": item.purchase_date,
+                    },
+                )
+            purchase_order.save(ignore_permissions=True)
+            purchase_order.reload()
+
+            # set the purchase order name and item row in each item in the Purchase Order Generator Items table
+            for item in items[supplier]:
+                for purchase_order_item in purchase_order.items:
+                    if item.item_code == purchase_order_item.item_code:
+                        frappe.db.set_value(
+                            "Purchase Order Generator Items",
+                            item.name,
+                            "poi",
+                            purchase_order_item.name,
+                        )
+                        frappe.db.set_value(
+                            "Purchase Order Generator Items",
+                            item.name,
+                            "po",
+                            purchase_order.name,
+                        )
+
+            # show a message to the user that the purchase orders are created with a link to the purchase orders
+            link = frappe.utils.get_url_to_form("Purchase Order", purchase_order.name)
+            frappe.msgprint(
+                f"""Purchase Order <a href="{link}">{purchase_order.name}</a>  is created for supplier {supplier}"""
+            )
 
     @frappe.whitelist()
     def get_items(self):
@@ -83,7 +139,11 @@ def get_items_from_sales_orders(
         AND SOI.qty > SOI.delivered_qty
         """
     if item_group:
-        conditions += f""" AND SOI.item_group = '{item_group}'"""
+        groups = get_child_item_groups(item_group)
+        groups = tuple(groups)
+        if len(groups) == 1:
+            groups = f"""('{groups[0]}')"""
+        conditions += f""" AND SOI.item_group IN {groups}"""
 
     if items and len(items) > 0:
         items_list = [item["item_code"] for item in items]
@@ -234,7 +294,11 @@ def get_items_sales(company, from_date, to_date, item_group=None, items=None):
         AND S.posting_date BETWEEN '{from_date}' AND '{to_date}'
         """
     if item_group:
-        conditions += f""" AND SI.item_group = '{item_group}'"""
+        groups = get_child_item_groups(item_group)
+        groups = tuple(groups)
+        if len(groups) == 1:
+            groups = f"""('{groups[0]}')"""
+        conditions += f""" AND SI.item_group IN {groups}"""
 
     if items and len(items) > 0:
         items_list = [item["item_code"] for item in items]

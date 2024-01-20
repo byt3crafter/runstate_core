@@ -192,15 +192,16 @@
   },
   {
    "fieldname": "po",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Purchase Order",
-   "options": "Purchase Order",
+   "no_copy": 1,
    "read_only": 1
   },
   {
    "fieldname": "poi",
    "fieldtype": "Data",
    "label": "Purchase Order Item",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -235,7 +236,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-18 16:09:05.184590",
+ "modified": "2024-01-20 14:34:24.221054",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Purchase Order Generator Items",
