@@ -2,13 +2,12 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Purchase Order Generator", {
-  refresh: function (frm) {
-    console.log("refresh");
-  },
   load_items: function (frm) {
     frappe.call({
       doc: frm.doc,
       method: "get_items",
+      freeze: true,
+      freeze_message: "Loading Items...",
       callback: function (r) {
         frm.refresh_fields();
         // set the doc as dirty to save it
