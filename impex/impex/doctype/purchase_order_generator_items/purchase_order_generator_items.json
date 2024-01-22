@@ -11,11 +11,13 @@
   "item_group",
   "last_purchase_section",
   "last_purchase_rate",
+  "last_purchase_currency",
   "last_purchase_supplier",
   "last_purchase_qty",
   "last_purchase_date",
   "cheapest_purchase_section",
   "cheapest_purchase_rate",
+  "cheapest_purchase_currency",
   "cheapest_purchase_supplier",
   "cheapest_purchase_qty",
   "cheapest_purchase_date",
@@ -31,6 +33,7 @@
   "purchase_section",
   "purchase_qty",
   "purchase_rate",
+  "purchase_currency",
   "purchase_supplier",
   "purchase_date",
   "links_section",
@@ -39,7 +42,7 @@
  ],
  "fields": [
   {
-   "columns": 1,
+   "columns": 2,
    "fieldname": "item_code",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -65,6 +68,7 @@
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "Last Purchase Rate",
+   "options": "last_purchase_currency",
    "read_only": 1
   },
   {
@@ -104,6 +108,7 @@
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "Cheapest Purchase Rate",
+   "options": "cheapest_purchase_currency",
    "read_only": 1
   },
   {
@@ -174,6 +179,7 @@
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "Purchase Rate",
+   "options": "purchase_currency",
    "reqd": 1
   },
   {
@@ -231,12 +237,33 @@
    "fieldtype": "Float",
    "label": "Open Purchase QTY",
    "read_only": 1
+  },
+  {
+   "fieldname": "cheapest_purchase_currency",
+   "fieldtype": "Link",
+   "label": "Cheapest Purchase Currency",
+   "options": "Currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_purchase_currency",
+   "fieldtype": "Link",
+   "label": "Last Purchase Currency",
+   "options": "Currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "purchase_currency",
+   "fieldtype": "Link",
+   "label": "Purchase Currency",
+   "options": "Currency",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-01-20 14:34:24.221054",
+ "modified": "2024-01-22 17:37:23.462923",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Purchase Order Generator Items",

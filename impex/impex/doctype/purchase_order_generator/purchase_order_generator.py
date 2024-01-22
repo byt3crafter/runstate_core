@@ -27,6 +27,7 @@ class PurchaseOrderGenerator(Document):
             purchase_order.company = self.company
             purchase_order.posting_date = self.date
             purchase_order.set("items", [])
+            purchase_order.currency = items[supplier][0].purchase_currency
             for item in items[supplier]:
                 purchase_order.append(
                     "items",
@@ -124,6 +125,9 @@ class PurchaseOrderGenerator(Document):
             item.cheapest_purchase_supplier or item.last_purchase_supplier
         )
         item.purchase_date = frappe.utils.today()
+        item.purchase_currency = (
+            item.cheapest_purchase_currency or item.last_purchase_currency
+        )
 
 
 def get_items_from_sales_orders(
@@ -175,7 +179,7 @@ def get_last_purchase_transactions_record(items, company):
     # fields: date , qty, rate, amount, supplier
     for item in items:
         last_purchase_transaction = frappe.db.sql(
-            f"""SELECT P.posting_date AS date, PI.qty, PI.rate, PI.amount, P.supplier
+            f"""SELECT P.posting_date AS date, PI.qty, PI.rate, PI.amount, P.supplier, P.currency
                 FROM `tabPurchase Invoice Item` PI
                 INNER JOIN `tabPurchase Invoice` P ON PI.parent = P.name
                 WHERE PI.item_code = '{item["item_code"]}' AND P.company = '{company}'
@@ -188,6 +192,7 @@ def get_last_purchase_transactions_record(items, company):
             item["last_purchase_supplier"] = last_purchase_transaction[0].supplier
             item["last_purchase_qty"] = last_purchase_transaction[0].qty
             item["last_purchase_date"] = last_purchase_transaction[0].date
+            item["last_purchase_currency"] = last_purchase_transaction[0].currency
 
     return items
 
@@ -198,11 +203,11 @@ def get_cheapest_purchase_transactions_record(items, company):
 
     for item in items:
         cheapest_purchase_transaction = frappe.db.sql(
-            f"""SELECT P.posting_date AS date, PI.qty, PI.rate, PI.amount, P.supplier
+            f"""SELECT P.posting_date AS date, PI.qty, PI.rate, PI.amount, P.supplier, P.currency
                 FROM `tabPurchase Invoice Item` PI
                 INNER JOIN `tabPurchase Invoice` P ON PI.parent = P.name
                 WHERE PI.item_code = '{item["item_code"]}' AND P.company = '{company}'
-                ORDER BY PI.rate ASC
+                ORDER BY PI.base_rate ASC
                 LIMIT 1""",
             as_dict=True,
         )
@@ -213,6 +218,9 @@ def get_cheapest_purchase_transactions_record(items, company):
             ].supplier
             item["cheapest_purchase_qty"] = cheapest_purchase_transaction[0].qty
             item["cheapest_purchase_date"] = cheapest_purchase_transaction[0].date
+            item["cheapest_purchase_currency"] = cheapest_purchase_transaction[
+                0
+            ].currency
 
     return items
 
