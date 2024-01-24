@@ -152,7 +152,11 @@ def get_items_from_sales_orders(
     if items and len(items) > 0:
         items_list = [item["item_code"] for item in items]
         items_list = tuple(items_list)
-        conditions += f""" AND SOI.item_code NOT IN {items_list}"""
+        if len(items_list) == 0:
+            return items
+        if len(items_list) == 1:
+            items_list = f"""('{items_list[0]}')"""
+        conditions += f""" AND SOI.item_code IN {items_list}"""
 
     items_data = frappe.db.sql(
         f"""SELECT item_code, item_name, item_group, SUM(qty) AS sales_orders_qty, SUM(base_net_amount) AS base_net_amount
