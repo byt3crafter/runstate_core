@@ -138,7 +138,8 @@ def get_items_from_sales_orders(
     conditions = f"""
         SO.docstatus = 1 
         AND SO.status IN ('To Deliver and Bill', 'To Deliver') 
-        AND SO.company = '{company}' 
+        AND SO.company = '{company}'
+        AND SO.custom_special_order = 0
         AND SO.transaction_date BETWEEN '{from_date}' AND '{to_date}'
         AND SOI.qty > SOI.delivered_qty
         """
@@ -186,7 +187,7 @@ def get_last_purchase_transactions_record(items, company):
             f"""SELECT P.posting_date AS date, PI.qty, PI.rate, PI.amount, P.supplier, P.currency
                 FROM `tabPurchase Invoice Item` PI
                 INNER JOIN `tabPurchase Invoice` P ON PI.parent = P.name
-                WHERE PI.item_code = '{item["item_code"]}' AND P.company = '{company}'
+                WHERE PI.item_code = '{item["item_code"]}' AND P.company = '{company}' AND P.custom_special_order = 0
                 ORDER BY P.posting_date DESC
                 LIMIT 1""",
             as_dict=True,
@@ -209,7 +210,7 @@ def get_cheapest_purchase_transactions_record(items, company):
         cheapest_purchase_transaction = frappe.db.sql(
             f"""SELECT P.posting_date AS date, PI.qty, PI.rate, PI.amount, P.supplier, P.currency
                 FROM `tabPurchase Invoice Item` PI
-                INNER JOIN `tabPurchase Invoice` P ON PI.parent = P.name
+                INNER JOIN `tabPurchase Invoice` P ON PI.parent = P.name AND P.custom_special_order = 0
                 WHERE PI.item_code = '{item["item_code"]}' AND P.company = '{company}'
                 ORDER BY PI.base_rate ASC
                 LIMIT 1""",
@@ -285,6 +286,7 @@ def get_open_purchase_orders_items(items, company):
             AND `tabPurchase Order`.company = '{company}' 
             AND item_code IN {items_list}
             AND qty > received_qty
+            AND `tabPurchase Order`.custom_special_order = 0
             GROUP BY item_code""",
         as_dict=True,
     )
@@ -304,6 +306,7 @@ def get_items_sales(company, from_date, to_date, item_group=None, items=None):
         SI.docstatus = 1
         AND S.company = '{company}'
         AND S.posting_date BETWEEN '{from_date}' AND '{to_date}'
+        AND S.custom_special_order = 0
         """
     if item_group:
         groups = get_child_item_groups(item_group)

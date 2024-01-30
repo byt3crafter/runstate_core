@@ -232,6 +232,10 @@ fixtures = [
                 [
                     "Item Barcode-barcode_image",
                     "Purchase Receipt Item-custom_label_qty",
+                    "Sales Invoice-custom_special_order",
+                    "Sales Order-custom_special_order",
+                    "Purchase Order-custom_special_order",
+                    "Purchase Invoice-custom_special_order",
                 ],
             ]
         ],
