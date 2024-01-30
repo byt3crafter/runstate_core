@@ -11,7 +11,35 @@ class PurchaseOrderGenerator(Document):
         pass
 
     def on_submit(self):
+        self.validate_mandatory_fields()
         self.create_purchase_orders()
+
+    def validate_mandatory_fields(self):
+        if not self.items:
+            frappe.throw(
+                frappe._(
+                    "You can not submit the Purchase Order Generator without items"
+                )
+            )
+        for item in self.items:
+            if not item.purchase_qty:
+                frappe.throw(
+                    frappe._(
+                        f"Purchase qty is missing for item {item.item_code} {item.item_name} in row {item.idx}"
+                    )
+                )
+            if not item.purchase_rate:
+                frappe.throw(
+                    frappe._(
+                        f"Purchase rate is missing for item {item.item_code} {item.item_name} in row {item.idx}"
+                    )
+                )
+            if not item.purchase_supplier:
+                frappe.throw(
+                    frappe._(
+                        f"Purchase supplier is missing for item {item.item_code} {item.item_name} in row {item.idx}"
+                    )
+                )
 
     def create_purchase_orders(self):
         # group items by supplier and create a purchase order for each supplier
