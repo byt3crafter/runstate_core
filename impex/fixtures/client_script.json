@@ -15,10 +15,10 @@
   "doctype": "Client Script",
   "dt": "Purchase Receipt",
   "enabled": 1,
-  "modified": "2023-12-21 17:07:02.948962",
+  "modified": "2024-02-01 13:33:27.879341",
   "module": "Barcode",
   "name": "Purchase Receipt Barcode",
-  "script": "frappe.ui.form.on('Purchase Receipt', {\n\trefresh: function(frm) {\n        frm.doc.items.forEach(function(item) {\n            // Directly modify the field value without using frappe.model.set_value\n            item.custom_label_qty = item.qty;\n        });\n        // Refresh the field to reflect changes in the UI\n        frm.refresh_field('items');\n    }\n})",
+  "script": "frappe.ui.form.on('Purchase Receipt', {\n    refresh: function(frm) {\n        frm.doc.items.forEach(function(item) {\n            // Check if custom_label_qty is not set or zero before setting it to qty\n            if (!item.custom_label_qty || item.custom_label_qty === 0) {\n                // Assuming custom_label_qty should be initialized to qty only if it's unset or explicitly zero\n                frappe.model.set_value(item.doctype, item.name, 'custom_label_qty', item.qty);\n            }\n        });\n        // Refresh the field to reflect changes in the UI\n        frm.refresh_field('items');\n    }\n});",
   "view": "Form"
  }
 ]
