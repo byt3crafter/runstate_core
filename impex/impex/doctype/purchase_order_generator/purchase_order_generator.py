@@ -4,6 +4,7 @@
 import frappe
 from frappe.model.document import Document
 from erpnext.setup.doctype.item_group.item_group import get_child_item_groups
+from frappe.utils import getdate
 
 
 class PurchaseOrderGenerator(Document):
@@ -43,6 +44,7 @@ class PurchaseOrderGenerator(Document):
 
     def create_purchase_orders(self):
         # group items by supplier and create a purchase order for each supplier
+        today_date = getdate()
         items = {}
         for item in self.items:
             if item.purchase_supplier not in items:
@@ -53,7 +55,7 @@ class PurchaseOrderGenerator(Document):
             purchase_order = frappe.new_doc("Purchase Order")
             purchase_order.supplier = supplier
             purchase_order.company = self.company
-            purchase_order.posting_date = self.date
+            purchase_order.posting_date = today_date
             purchase_order.set("items", [])
             purchase_order.currency = items[supplier][0].purchase_currency
             for item in items[supplier]:
@@ -65,7 +67,11 @@ class PurchaseOrderGenerator(Document):
                         "item_group": item.item_group,
                         "qty": item.purchase_qty,
                         "rate": item.purchase_rate,
-                        "schedule_date": item.purchase_date,
+                        "schedule_date": (
+                            item.purchase_date
+                            if getdate(item.purchase_date) > today_date
+                            else today_date
+                        ),
                     },
                 )
             purchase_order.save(ignore_permissions=True)
