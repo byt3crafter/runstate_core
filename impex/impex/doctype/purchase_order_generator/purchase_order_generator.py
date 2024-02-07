@@ -282,7 +282,7 @@ def get_existing_stock_qty(items, company):
         f"""SELECT item_code, warehouse, SUM(actual_qty) AS qty
             FROM `tabBin`
             WHERE warehouse IN {warehouses} AND item_code IN {items_list}
-            GROUP BY item_code, warehouse""",
+            GROUP BY item_code""",
         as_dict=True,
     )
     for item in items:
