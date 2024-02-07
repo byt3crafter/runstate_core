@@ -240,7 +240,7 @@ fixtures = [
             ]
         ],
     },
-    {"dt": "Print Format", "filters": [["name", "in", ["Bcode Item", "Bcode PREC"]]]},
+    {"dt": "Print Format", "filters": [["name", "in", ["Bcode Item", "LTH Labels"]]]},
     {
         "dt": "Client Script",
         "filters": [["name", "in", ["Item-Form", "Purchase Receipt Barcode"]]],
