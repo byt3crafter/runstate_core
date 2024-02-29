@@ -54,6 +54,11 @@ class PurchaseOrderGenerator(Document):
         for supplier in items:
             purchase_order = frappe.new_doc("Purchase Order")
             purchase_order.supplier = supplier
+            supplier_price_list = frappe.get_cached_value(
+                "Supplier", supplier, "default_price_list"
+            )
+            if supplier_price_list:
+                purchase_order.buying_price_list = supplier_price_list
             purchase_order.company = self.company
             purchase_order.posting_date = today_date
             purchase_order.set("items", [])
@@ -202,7 +207,7 @@ def get_items_from_sales_orders(
         as_dict=True,
     )
     if items:
-        # update only sales_orders_qty and base_net_amount and retrun the updated items
+        # update only sales_orders_qty and base_net_amount and return the updated items
         for item in items:
             for item_data in items_data:
                 if item["item_code"] == item_data["item_code"]:
@@ -221,7 +226,7 @@ def get_last_purchase_transactions_record(items, company):
             f"""SELECT P.posting_date AS date, PI.qty, PI.rate, PI.amount, P.supplier, P.currency
                 FROM `tabPurchase Invoice Item` PI
                 INNER JOIN `tabPurchase Invoice` P ON PI.parent = P.name
-                WHERE PI.item_code = '{item["item_code"]}' AND P.company = '{company}' AND P.custom_special_order = 0
+                WHERE PI.item_code = '{item["item_code"]}' AND P.company = '{company}' AND P.custom_special_order = 0 AND P.docstatus = 1 and P.is_return = 0
                 ORDER BY P.posting_date DESC
                 LIMIT 1""",
             as_dict=True,
@@ -245,7 +250,7 @@ def get_cheapest_purchase_transactions_record(items, company):
             f"""SELECT P.posting_date AS date, PI.qty, PI.rate, PI.amount, P.supplier, P.currency
                 FROM `tabPurchase Invoice Item` PI
                 INNER JOIN `tabPurchase Invoice` P ON PI.parent = P.name AND P.custom_special_order = 0
-                WHERE PI.item_code = '{item["item_code"]}' AND P.company = '{company}'
+                WHERE PI.item_code = '{item["item_code"]}' AND P.company = '{company}' AND P.docstatus = 1 and P.is_return = 0
                 ORDER BY PI.base_rate ASC
                 LIMIT 1""",
             as_dict=True,
