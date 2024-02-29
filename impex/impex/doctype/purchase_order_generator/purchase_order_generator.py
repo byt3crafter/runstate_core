@@ -48,57 +48,69 @@ class PurchaseOrderGenerator(Document):
         items = {}
         for item in self.items:
             if item.purchase_supplier not in items:
-                items[item.purchase_supplier] = []
-            items[item.purchase_supplier].append(item)
+                items[item.purchase_supplier] = [[]]
+            # add items to the supplier list of items 50 items per purchase order as multiple items list
+            if len(items[item.purchase_supplier][-1]) < 50:
+                items[item.purchase_supplier][-1].append(item)
+            else:
+                items[item.purchase_supplier].append([item])
 
         for supplier in items:
-            purchase_order = frappe.new_doc("Purchase Order")
-            purchase_order.supplier = supplier
-            purchase_order.company = self.company
-            purchase_order.posting_date = today_date
-            purchase_order.set("items", [])
-            purchase_order.currency = items[supplier][0].purchase_currency
-            for item in items[supplier]:
-                purchase_order.append(
-                    "items",
-                    {
-                        "item_code": item.item_code,
-                        "item_name": item.item_name,
-                        "item_group": item.item_group,
-                        "qty": item.purchase_qty,
-                        "rate": item.purchase_rate,
-                        "schedule_date": (
-                            item.purchase_date
-                            if getdate(item.purchase_date) > today_date
-                            else today_date
-                        ),
-                    },
+            for items_list in items[supplier]:
+                purchase_order = frappe.new_doc("Purchase Order")
+                purchase_order.supplier = supplier
+                supplier_price_list = frappe.get_cached_value(
+                    "Supplier", supplier, "default_price_list"
                 )
-            purchase_order.save(ignore_permissions=True)
-            purchase_order.reload()
+                if supplier_price_list:
+                    purchase_order.buying_price_list = supplier_price_list
+                purchase_order.company = self.company
+                purchase_order.posting_date = today_date
+                purchase_order.set("items", [])
+                purchase_order.currency = items[supplier][0][0].purchase_currency
+                for item in items_list:
+                    purchase_order.append(
+                        "items",
+                        {
+                            "item_code": item.item_code,
+                            "item_name": item.item_name,
+                            "item_group": item.item_group,
+                            "qty": item.purchase_qty,
+                            "rate": item.purchase_rate,
+                            "schedule_date": (
+                                item.purchase_date
+                                if getdate(item.purchase_date) > today_date
+                                else today_date
+                            ),
+                        },
+                    )
+                purchase_order.save(ignore_permissions=True)
+                purchase_order.reload()
 
-            # set the purchase order name and item row in each item in the Purchase Order Generator Items table
-            for item in items[supplier]:
-                for purchase_order_item in purchase_order.items:
-                    if item.item_code == purchase_order_item.item_code:
-                        frappe.db.set_value(
-                            "Purchase Order Generator Items",
-                            item.name,
-                            "poi",
-                            purchase_order_item.name,
-                        )
-                        frappe.db.set_value(
-                            "Purchase Order Generator Items",
-                            item.name,
-                            "po",
-                            purchase_order.name,
-                        )
+                # set the purchase order name and item row in each item in the Purchase Order Generator Items table
+                for item in items_list:
+                    for purchase_order_item in purchase_order.items:
+                        if item.item_code == purchase_order_item.item_code:
+                            frappe.db.set_value(
+                                "Purchase Order Generator Items",
+                                item.name,
+                                "poi",
+                                purchase_order_item.name,
+                            )
+                            frappe.db.set_value(
+                                "Purchase Order Generator Items",
+                                item.name,
+                                "po",
+                                purchase_order.name,
+                            )
 
-            # show a message to the user that the purchase orders are created with a link to the purchase orders
-            link = frappe.utils.get_url_to_form("Purchase Order", purchase_order.name)
-            frappe.msgprint(
-                f"""Purchase Order <a href="{link}">{purchase_order.name}</a>  is created for supplier {supplier}"""
-            )
+                # show a message to the user that the purchase orders are created with a link to the purchase orders
+                link = frappe.utils.get_url_to_form(
+                    "Purchase Order", purchase_order.name
+                )
+                frappe.msgprint(
+                    f"""Purchase Order <a href="{link}">{purchase_order.name}</a>  is created for supplier {supplier}"""
+                )
 
     @frappe.whitelist()
     def get_items(self):
@@ -202,7 +214,7 @@ def get_items_from_sales_orders(
         as_dict=True,
     )
     if items:
-        # update only sales_orders_qty and base_net_amount and retrun the updated items
+        # update only sales_orders_qty and base_net_amount and return the updated items
         for item in items:
             for item_data in items_data:
                 if item["item_code"] == item_data["item_code"]:
@@ -221,7 +233,7 @@ def get_last_purchase_transactions_record(items, company):
             f"""SELECT P.posting_date AS date, PI.qty, PI.rate, PI.amount, P.supplier, P.currency
                 FROM `tabPurchase Invoice Item` PI
                 INNER JOIN `tabPurchase Invoice` P ON PI.parent = P.name
-                WHERE PI.item_code = '{item["item_code"]}' AND P.company = '{company}' AND P.custom_special_order = 0
+                WHERE PI.item_code = '{item["item_code"]}' AND P.company = '{company}' AND P.custom_special_order = 0 AND P.docstatus = 1 and P.is_return = 0
                 ORDER BY P.posting_date DESC
                 LIMIT 1""",
             as_dict=True,
@@ -245,7 +257,7 @@ def get_cheapest_purchase_transactions_record(items, company):
             f"""SELECT P.posting_date AS date, PI.qty, PI.rate, PI.amount, P.supplier, P.currency
                 FROM `tabPurchase Invoice Item` PI
                 INNER JOIN `tabPurchase Invoice` P ON PI.parent = P.name AND P.custom_special_order = 0
-                WHERE PI.item_code = '{item["item_code"]}' AND P.company = '{company}'
+                WHERE PI.item_code = '{item["item_code"]}' AND P.company = '{company}' AND P.docstatus = 1 and P.is_return = 0
                 ORDER BY PI.base_rate ASC
                 LIMIT 1""",
             as_dict=True,
