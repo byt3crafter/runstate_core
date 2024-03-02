@@ -1,6 +1,7 @@
 import frappe
 from impex.extends.mapper import get_mapped_doc
 from frappe.utils import flt
+from erpnext.stock.get_item_details import get_price_list_rate_for
 
 
 def validate(doc, method=None):
@@ -230,3 +231,65 @@ def generate_pick_lists():
                 f"Failed to generate pick list for Sales Order {sales_order.name}.",
             )
             frappe.db.rollback()
+
+
+def update_sales_orders_prices():
+    # a routine to update the prices of all uncompleted sales orders based on the latest price list and currency exchange rate
+    sales_orders = frappe.get_all(
+        "Sales Order",
+        filters={
+            "docstatus": ["!=", 2],
+            "status": ["not in", ["Closed", "Completed", "Cancelled"]],
+        },
+        fields=["name"],
+    )
+
+    for sales_order in sales_orders:
+        try:
+            so = frappe.get_cached_doc("Sales Order", sales_order.name)
+            update_sales_order_prices(so)
+        except Exception:
+            frappe.log_error(
+                frappe.get_traceback(),
+                f"Failed to update prices for Sales Order {sales_order.name}.",
+            )
+            frappe.db.rollback()
+
+
+def update_sales_order_prices(so):
+    there_is_a_change = False
+    items_changed = []
+    for item in so.items:
+        args = {
+            "price_list": so.selling_price_list,
+            "customer": so.customer,
+            "uom": item.uom,
+            "transaction_date": so.transaction_date,
+            "qty": item.qty,
+        }
+        last_price_list_rate = get_price_list_rate_for(args, item.item_code)
+        if last_price_list_rate and last_price_list_rate != item.rate:
+            there_is_a_change = True
+            items_changed.append(item.item_code)
+            item.rate = last_price_list_rate
+            item.amount = item.qty * item.rate
+            item.price_list_rate = last_price_list_rate
+    if there_is_a_change:
+        so.calculate_taxes_and_totals()
+        if so.docstatus == 0:
+            # if doc is not submitted, save it without checking permissions
+            so.save(ignore_permissions=True)
+        elif so.docstatus == 1:
+            # if doc is submitted, update the doc
+            so.flags.ignore_validate_update_after_submit = True
+            so.save(ignore_permissions=True)
+
+        # add a comment to the sales order
+        so.add_comment(
+            "Comment",
+            "Prices have been automatically updated based on the latest price list, for items: {}".format(
+                ", ".join(items_changed)
+            ),
+        )
+
+        frappe.db.commit()

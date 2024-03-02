@@ -131,9 +131,7 @@ scheduler_events = {
     # "all": [
     # 	"impex.tasks.all"
     # ],
-    # "daily": [
-    # 	"impex.tasks.daily"
-    # ],
+    "daily": ["impex.extends.sales_order.update_sales_orders_prices"],
     # "hourly": [
     # 	"impex.tasks.hourly"
     # ],
