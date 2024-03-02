@@ -268,7 +268,7 @@ def update_sales_order_prices(so):
             "qty": item.qty,
         }
         last_price_list_rate = get_price_list_rate_for(args, item.item_code)
-        if last_price_list_rate and last_price_list_rate != item.rate:
+        if last_price_list_rate and flt(last_price_list_rate, 2) != flt(item.rate, 2):
             there_is_a_change = True
             items_changed.append(item.item_code)
             item.rate = last_price_list_rate
