@@ -30,6 +30,8 @@ def prompt_same_items(doc):
                 WHERE
                     so.docstatus = 1
                 AND
+                    so.status != 'Closed'
+                AND
                     so.customer = %(customer)s
                 AND
                     soi.item_code = %(item_code)s
