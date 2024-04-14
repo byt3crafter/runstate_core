@@ -138,7 +138,12 @@ class PurchaseOrderGenerator(Document):
         # set last purchase rate, qty, supplier, date for each item
         items = get_last_purchase_transactions_record(items, self.company)
         # set cheapest purchase rate, qty, supplier, date for each item
-        items = get_cheapest_purchase_transactions_record(items, self.company)
+        items = get_cheapest_purchase_transactions_record(
+            items,
+            self.company,
+            self.from_date,
+            self.to_date,
+        )
 
         # set existing stock qty for each item
         items = get_existing_stock_qty(items, self.company)
@@ -248,16 +253,16 @@ def get_last_purchase_transactions_record(items, company):
     return items
 
 
-def get_cheapest_purchase_transactions_record(items, company):
-    # return the cheapest purchase transaction for each item
+def get_cheapest_purchase_transactions_record(items, company, from_date, to_date):
+    # return the cheapest purchase transaction for each item between from_date and to_date
     # fields: date , qty, rate, amount, supplier
 
     for item in items:
         cheapest_purchase_transaction = frappe.db.sql(
             f"""SELECT P.posting_date AS date, PI.qty, PI.rate, PI.amount, P.supplier, P.currency
                 FROM `tabPurchase Invoice Item` PI
-                INNER JOIN `tabPurchase Invoice` P ON PI.parent = P.name AND P.custom_special_order = 0
-                WHERE PI.item_code = '{item["item_code"]}' AND P.company = '{company}' AND P.docstatus = 1 and P.is_return = 0
+                INNER JOIN `tabPurchase Invoice` P ON PI.parent = P.name
+                WHERE PI.item_code = '{item["item_code"]}' AND P.company = '{company}' AND P.custom_special_order = 0 AND P.docstatus = 1 and P.is_return = 0 and P.posting_date BETWEEN '{from_date}' AND '{to_date}'
                 ORDER BY PI.base_rate ASC
                 LIMIT 1""",
             as_dict=True,
