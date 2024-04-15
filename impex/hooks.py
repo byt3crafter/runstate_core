@@ -122,6 +122,9 @@ doc_events = {
     "Sales Order": {
         "validate": "impex.extends.sales_order.validate",
     },
+    "Supplier Quotation": {
+        "on_submit": "impex.extends.supplier_quotation.on_submit",
+    },
 }
 
 # Scheduled Tasks
@@ -132,9 +135,7 @@ scheduler_events = {
     # 	"impex.tasks.all"
     # ],
     # "daily": ["impex.extends.sales_order.update_sales_orders_prices"],
-      "hourly": [
-        "impex.extends.sales_order.update_sales_orders_prices"
-      ],
+    "hourly": ["impex.extends.sales_order.update_sales_orders_prices"],
     # "weekly": [
     # 	"impex.tasks.weekly"
     # ],
