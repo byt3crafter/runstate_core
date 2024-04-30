@@ -1,5 +1,6 @@
 import frappe
-from impex.extends.sales_order import generate_pick_lists
+
+# from impex.extends.sales_order import generate_pick_lists
 
 
 def weekly():

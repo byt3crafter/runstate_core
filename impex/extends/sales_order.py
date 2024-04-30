@@ -207,6 +207,12 @@ def create_pick_list(source_name, target_doc=None):
     return doc
 
 
+@frappe.whitelist()
+def background_generate_pick_lists():
+    frappe.enqueue("impex.extends.sales_order.generate_pick_lists")
+    return "Pick lists are being generated in the background."
+
+
 def generate_pick_lists():
     """
     Generate pick lists for all sales orders that have not been delivered yet or partially delivered.
@@ -225,14 +231,14 @@ def generate_pick_lists():
             doc = create_pick_list(sales_order.name)
             if doc.get("locations") and len(doc.locations) > 0:
                 doc.save(ignore_permissions=True)
-                doc.submit()
+                # doc.submit()
                 frappe.db.commit()
         except Exception:
             frappe.log_error(
                 frappe.get_traceback(),
                 f"Failed to generate pick list for Sales Order {sales_order.name}.",
             )
-            frappe.db.rollback()
+    frappe.msgprint("Pick lists have been generated.")
 
 
 def update_sales_orders_prices():
