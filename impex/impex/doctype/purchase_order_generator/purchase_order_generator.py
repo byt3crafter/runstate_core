@@ -68,6 +68,12 @@ class PurchaseOrderGenerator(Document):
                 purchase_order.posting_date = today_date
                 purchase_order.set("items", [])
                 purchase_order.currency = items[supplier][0][0].purchase_currency
+                conversion_rate = frappe.get_cached_value(
+                    "Supplier", supplier, "exchange_rate"
+                )
+                if conversion_rate:
+                    purchase_order.conversion_rate = conversion_rate
+
                 for item in items_list:
                     purchase_order.append(
                         "items",
