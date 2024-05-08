@@ -125,6 +125,9 @@ doc_events = {
     "Supplier Quotation": {
         "on_submit": "impex.extends.supplier_quotation.on_submit",
     },
+    "Pick List": {
+        "validate": "impex.extends.pick_list.validate",
+    },
 }
 
 # Scheduled Tasks
@@ -236,6 +239,7 @@ fixtures = [
                     "Purchase Order-custom_special_order",
                     "Purchase Invoice-custom_special_order",
                     "Supplier-exchange_rate",
+                    "Pick List Item-custom_bin_location",
                 ],
             ]
         ],
