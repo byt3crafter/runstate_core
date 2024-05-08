@@ -164,7 +164,11 @@ class PurchaseOrderGenerator(Document):
             # set required purchase qty for each item
             self.set_required_purchase_qty(item)
             if item.purchase_qty > 0:
-                self.append("items", item)
+                if self.supplier:
+                    if item.cheapest_purchase_supplier == self.supplier:
+                        self.append("items", item)
+                else:
+                    self.append("items", item)
 
         return self.items
 

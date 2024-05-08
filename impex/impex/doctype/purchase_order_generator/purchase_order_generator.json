@@ -18,6 +18,7 @@
   "to_date",
   "column_break_mpsoj",
   "item_group",
+  "supplier",
   "load_items",
   "items_section",
   "items"
@@ -112,12 +113,18 @@
    "options": "Purchase Order Generator",
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Supplier",
+   "options": "Supplier"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-01-20 14:31:25.829738",
+ "modified": "2024-05-08 22:35:57.290473",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Purchase Order Generator",
