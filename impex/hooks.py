@@ -128,6 +128,9 @@ doc_events = {
     "Pick List": {
         "validate": "impex.extends.pick_list.validate",
     },
+    "Purchase Invoice": {
+        "on_submit": "impex.extends.purchase_invoice.on_submit",
+    },
 }
 
 # Scheduled Tasks
@@ -240,6 +243,12 @@ fixtures = [
                     "Purchase Invoice-custom_special_order",
                     "Supplier-exchange_rate",
                     "Pick List Item-custom_bin_location",
+                    "Supplier-rules_to_update_prices",
+                    "Supplier-rule_prices",
+                    "Item-rules_to_update_prices",
+                    "Item-rule_prices",
+                    "Item Group-rules_to_update_prices",
+                    "Item Group-rule_prices",
                 ],
             ]
         ],

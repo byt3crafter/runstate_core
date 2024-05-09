@@ -1,0 +1,116 @@
+{
+ "actions": [],
+ "creation": "2024-05-09 15:32:11.220185",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "item_code",
+  "item_name",
+  "price_list",
+  "margin",
+  "base_price_list",
+  "update_sp",
+  "source",
+  "item_price",
+  "last_rate",
+  "new_rate"
+ ],
+ "fields": [
+  {
+   "columns": 1,
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item Code",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "fetch_from": "item_code.item_name",
+   "fieldname": "item_name",
+   "fieldtype": "Read Only",
+   "in_list_view": 1,
+   "label": "Item Name"
+  },
+  {
+   "columns": 2,
+   "fieldname": "price_list",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Price List",
+   "options": "Price List",
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "margin",
+   "fieldtype": "Percent",
+   "in_list_view": 1,
+   "label": "Margin",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "base_price_list",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Base on Price List",
+   "options": "Price List"
+  },
+  {
+   "default": "1",
+   "fieldname": "update_sp",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Update Supplier"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "\nItem Group\nItem\nSupplier"
+  },
+  {
+   "fieldname": "item_price",
+   "fieldtype": "Data",
+   "label": "Item Price",
+   "no_copy": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "last_rate",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Last Rate",
+   "no_copy": 1,
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "new_rate",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "New Rate",
+   "precision": "2",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-05-09 15:32:11.220185",
+ "modified_by": "Administrator",
+ "module": "Impex",
+ "name": "Price Change Rule",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
