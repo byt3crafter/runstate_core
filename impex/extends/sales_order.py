@@ -141,72 +141,6 @@ def is_item_in_company_stock(item_code, qty, company):
     return False
 
 
-def create_pick_list(source_name, target_doc=None):
-    from erpnext.stock.doctype.packed_item.packed_item import is_product_bundle
-
-    def update_item_quantity(source, target, source_parent) -> None:
-        picked_qty = flt(source.picked_qty) / (flt(source.conversion_factor) or 1)
-        qty_to_be_picked = flt(source.qty) - max(picked_qty, flt(source.delivered_qty))
-
-        target.qty = qty_to_be_picked
-        target.stock_qty = qty_to_be_picked * flt(source.conversion_factor)
-
-    def update_packed_item_qty(source, target, source_parent) -> None:
-        qty = flt(source.qty)
-        for item in source_parent.items:
-            if source.parent_detail_docname == item.name:
-                picked_qty = flt(item.picked_qty) / (flt(item.conversion_factor) or 1)
-                pending_percent = (
-                    item.qty - max(picked_qty, item.delivered_qty)
-                ) / item.qty
-                target.qty = target.stock_qty = qty * pending_percent
-                return
-
-    def should_pick_order_item(item, source_doc) -> bool:
-        return (
-            abs(item.delivered_qty) < abs(item.qty)
-            and item.delivered_by_supplier != 1
-            and not is_product_bundle(item.item_code)
-            and is_item_in_company_stock(
-                item.item_code, item.qty - item.delivered_qty, source_doc.company
-            )
-        )
-
-    doc = get_mapped_doc(
-        "Sales Order",
-        source_name,
-        {
-            "Sales Order": {
-                "doctype": "Pick List",
-                "validation": {"docstatus": ["=", 1]},
-            },
-            "Sales Order Item": {
-                "doctype": "Pick List Item",
-                "field_map": {"parent": "sales_order", "name": "sales_order_item"},
-                "postprocess": update_item_quantity,
-                "condition": should_pick_order_item,
-            },
-            "Packed Item": {
-                "doctype": "Pick List Item",
-                "field_map": {
-                    "parent": "sales_order",
-                    "name": "sales_order_item",
-                    "parent_detail_docname": "product_bundle_item",
-                },
-                "field_no_map": ["picked_qty"],
-                "postprocess": update_packed_item_qty,
-            },
-        },
-        target_doc,
-    )
-
-    doc.purpose = "Delivery"
-
-    doc.set_item_locations()
-
-    return doc
-
-
 @frappe.whitelist()
 def background_generate_pick_lists():
     frappe.enqueue("impex.extends.sales_order.generate_pick_lists")
@@ -226,18 +160,70 @@ def generate_pick_lists():
         fields=["name"],
     )
 
+    customers_orders_dict = {}
+
     for sales_order in sales_orders:
-        try:
-            doc = create_pick_list(sales_order.name)
-            if doc.get("locations") and len(doc.locations) > 0:
-                doc.save(ignore_permissions=True)
-                # doc.submit()
-                frappe.db.commit()
-        except Exception:
-            frappe.log_error(
-                frappe.get_traceback(),
-                f"Failed to generate pick list for Sales Order {sales_order.name}.",
-            )
+        order_doc = frappe.get_cached_doc("Sales Order", sales_order.name)
+        if order_doc.customer not in customers_orders_dict:
+            customers_orders_dict[order_doc.customer] = []
+        customers_orders_dict[order_doc.customer].append(order_doc)
+
+    for customer, orders in customers_orders_dict.items():
+        ## group the items from the orders by customer and no more 25 items per pick list
+        items = []
+        for order in orders:
+            for item in order.items:
+                if (
+                    abs(item.delivered_qty) < abs(item.qty)
+                    and item.delivered_by_supplier != 1
+                    and is_item_in_company_stock(
+                        item.item_code, item.qty - item.delivered_qty, order.company
+                    )
+                ):
+                    items.append(item)
+
+        items_grouped = [items[i : i + 25] for i in range(0, len(items), 25)]
+
+        for items_set in items_grouped:
+            if items_set:
+                try:
+                    pick_list = frappe.new_doc("Pick List")
+                    pick_list.customer = customer
+                    pick_list.purpose = "Delivery"
+                    pick_list.company = orders[0].company
+
+                    for pick_list_item in items_set:
+                        pick_list.append(
+                            "locations",
+                            {
+                                "item_code": pick_list_item.item_code,
+                                "item_name": pick_list_item.item_name,
+                                "description": pick_list_item.description,
+                                "uom": pick_list_item.uom,
+                                "stock_uom": pick_list_item.stock_uom,
+                                "conversion_factor": pick_list_item.conversion_factor,
+                                "qty": pick_list_item.qty
+                                - pick_list_item.delivered_qty,
+                                "stock_qty": (
+                                    pick_list_item.qty - pick_list_item.delivered_qty
+                                )
+                                * pick_list_item.conversion_factor,
+                                "sales_order": pick_list_item.parent,
+                                "sales_order_item": pick_list_item.name,
+                            },
+                        )
+
+                    if len(pick_list.locations) > 0:
+                        pick_list.set_item_locations()
+                        pick_list.save(ignore_permissions=True)
+                        # pick_list.submit()
+
+                except Exception:
+                    frappe.log_error(
+                        frappe.get_traceback(),
+                        f"Failed to generate pick list for customer {customer}.",
+                    )
+
     frappe.msgprint("Pick lists have been generated.")
 
 
