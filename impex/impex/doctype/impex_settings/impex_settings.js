@@ -14,4 +14,12 @@ frappe.ui.form.on("Impex Settings", {
       },
     });
   },
+  update_sales_orders_prices: function (frm) {
+    frappe.call({
+      method: "impex.extends.sales_order.background_update_sales_orders_prices",
+      callback: function (r) {
+        frappe.msgprint("Prices are being updated in the background");
+      },
+    });
+  },
 });

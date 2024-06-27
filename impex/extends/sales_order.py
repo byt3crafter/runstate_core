@@ -227,6 +227,12 @@ def generate_pick_lists():
     frappe.msgprint("Pick lists have been generated.")
 
 
+@frappe.whitelist()
+def background_update_sales_orders_prices():
+    frappe.enqueue("impex.extends.sales_order.update_sales_orders_prices", queue="long")
+    return "Prices are being updated in the background."
+
+
 def update_sales_orders_prices():
     # a routine to update the prices of all uncompleted sales orders based on the latest price list and currency exchange rate
     sales_orders = frappe.get_all(

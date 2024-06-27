@@ -7,19 +7,25 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "create_pick_list"
+  "create_pick_list",
+  "update_sales_orders_prices"
  ],
  "fields": [
   {
    "fieldname": "create_pick_list",
    "fieldtype": "Button",
    "label": "Create Pick List"
+  },
+  {
+   "fieldname": "update_sales_orders_prices",
+   "fieldtype": "Button",
+   "label": "Update Sales Orders Prices"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-04-30 03:25:06.728584",
+ "modified": "2024-06-27 04:00:48.378349",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Impex Settings",
