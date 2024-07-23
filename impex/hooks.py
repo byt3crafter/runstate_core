@@ -128,7 +128,10 @@ doc_events = {
     "Pick List": {
         "validate": "impex.extends.pick_list.validate",
     },
-    "Purchase Invoice": {
+    # "Purchase Invoice": {
+    #     "on_submit": "impex.extends.purchase_invoice.on_submit",
+    # },
+    "Purchase Order": {
         "on_submit": "impex.extends.purchase_invoice.on_submit",
     },
 }

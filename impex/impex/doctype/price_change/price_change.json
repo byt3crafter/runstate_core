@@ -9,6 +9,7 @@
  "field_order": [
   "supplier",
   "purchase_invoice",
+  "purchase_order",
   "column_break_wwj4o",
   "posting_date",
   "currency",
@@ -32,6 +33,7 @@
    "fieldname": "purchase_invoice",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_preview": 1,
    "in_standard_filter": 1,
    "label": "Purchase Invoice",
    "options": "Purchase Invoice"
@@ -100,12 +102,21 @@
    "options": "Price Change",
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "purchase_order",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Purchase Order",
+   "options": "Purchase Order"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-05-09 16:53:29.992648",
+ "modified": "2024-07-23 13:29:20.515059",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Price Change",

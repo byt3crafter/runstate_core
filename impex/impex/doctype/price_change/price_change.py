@@ -190,11 +190,18 @@ class PriceChange(Document):
 
 
 def create_price_change_from_purchase_invoice(doc):
-    if not doc.is_return:
+    if not doc.get("is_return"):
         price_change_doc = frappe.new_doc("Price Change")
-        price_change_doc.posting_date = doc.posting_date
+        if doc.doctype == "Purchase Invoice":
+            price_change_doc.purchase_invoice = doc.name
+        elif doc.doctype == "Purchase Order":
+            price_change_doc.purchase_order = doc.name
+        price_change_doc.posting_date = (
+            doc.get("posting_date")
+            or doc.get("transaction_date")
+            or frappe.utils.nowdate()
+        )
         price_change_doc.supplier = doc.supplier
-        price_change_doc.purchase_invoice = doc.name
         price_change_doc.items = []
         price_change_doc.currency = doc.currency
         supplier_doc = frappe.get_cached_doc(
@@ -212,7 +219,7 @@ def create_price_change_from_purchase_invoice(doc):
                 SELECT
                     base_rate
                 FROM
-                    `tabPurchase Invoice Item`
+                    `tabPurchase Order Item`
                 WHERE
                     item_code = %s
                     AND docstatus = 1
