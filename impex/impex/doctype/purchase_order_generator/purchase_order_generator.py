@@ -141,14 +141,19 @@ class PurchaseOrderGenerator(Document):
                 self.company, self.from_date, self.to_date, self.item_group, items
             )
 
-        # set last purchase rate, qty, supplier, date for each item
-        items = get_last_purchase_transactions_record(items, self.company)
-        # set cheapest purchase rate, qty, supplier, date for each item
-        items = get_cheapest_purchase_transactions_record(
-            items,
-            self.company,
-            self.from_date,
-            self.to_date,
+        # # set last purchase rate, qty, supplier, date for each item
+        # items = get_last_purchase_transactions_record(items, self.company)
+        # # set cheapest purchase rate, qty, supplier, date for each item
+        # items = get_cheapest_purchase_transactions_record(
+        #     items,
+        #     self.company,
+        #     self.from_date,
+        #     self.to_date,
+        # )
+
+        # set the latest purchase transaction for each item from each supplier
+        items = get_latest_purchase_transactions_record_for_each_supplier(
+            items, self.company, self.from_date, self.to_date
         )
 
         # set existing stock qty for each item
@@ -287,6 +292,84 @@ def get_cheapest_purchase_transactions_record(items, company, from_date, to_date
             item["cheapest_purchase_currency"] = cheapest_purchase_transaction[
                 0
             ].currency
+
+    return items
+
+
+def get_latest_purchase_transactions_record_for_each_supplier(
+    items, company, from_date, to_date
+):
+    """
+    Return the latest purchase transaction for each item from each supplier between from_date and to_date
+
+    :param items: list of items
+    :param company: company name
+    :param from_date: start date
+    :param to_date: end date
+    """
+
+    items_dict = {}
+    for item in items:
+        # get all suppliers for the item between from_date and to_date
+        # only one last transaction record for each supplier
+        item_suppliers = frappe.db.sql(
+            f"""SELECT DISTINCT P.supplier AS supplier, P.posting_date AS date, PI.qty, PI.rate, PI.amount, P.currency
+                FROM `tabPurchase Invoice Item` PI
+                INNER JOIN `tabPurchase Invoice` P ON PI.parent = P.name
+                WHERE PI.item_code = '{item["item_code"]}' AND P.company = '{company}' AND P.custom_special_order = 0 AND P.docstatus = 1 and P.is_return = 0 and P.posting_date BETWEEN '{from_date}' AND '{to_date}'
+                ORDER BY P.posting_date ASC""",
+            as_dict=True,
+        )
+
+        if item.item_code not in items_dict:
+            items_dict[item.item_code] = {}
+        for supplier in item_suppliers:
+            items_dict[item.item_code][supplier.supplier] = supplier
+
+    # set the cheapest purchase transaction and the latest purchase transaction for each item from supplier
+    for item in items:
+        if item.item_code in items_dict:
+            cheapest_supplier = None
+            cheapest_rate = None
+            cheapest_currency = None
+            cheapest_date = None
+            cheapest_qty = None
+            latest_supplier = None
+            latest_rate = None
+            latest_currency = None
+            latest_date = None
+            latest_qty = None
+            for supplier in items_dict[item.item_code]:
+                if (
+                    not cheapest_rate
+                    or items_dict[item.item_code][supplier].rate < cheapest_rate
+                ):
+                    cheapest_supplier = supplier
+                    cheapest_rate = items_dict[item.item_code][supplier].rate
+                    cheapest_currency = items_dict[item.item_code][supplier].currency
+                    cheapest_date = items_dict[item.item_code][supplier].date
+                    cheapest_qty = items_dict[item.item_code][supplier].qty
+                if (
+                    not latest_date
+                    or items_dict[item.item_code][supplier].date > latest_date
+                ):
+                    latest_supplier = supplier
+                    latest_rate = items_dict[item.item_code][supplier].rate
+                    latest_currency = items_dict[item.item_code][supplier].currency
+                    latest_date = items_dict[item.item_code][supplier].date
+                    latest_qty = items_dict[item.item_code][supplier].qty
+
+            item["cheapest_purchase_rate"] = cheapest_rate
+            item["cheapest_purchase_supplier"] = cheapest_supplier
+            item["cheapest_purchase_qty"] = cheapest_qty
+            item["cheapest_purchase_date"] = cheapest_date
+            item["cheapest_purchase_currency"] = cheapest_currency
+
+            item["last_purchase_rate"] = latest_rate
+            item["last_purchase_supplier"] = latest_supplier
+            item["last_purchase_qty"] = latest_qty
+            item["last_purchase_date"] = latest_date
+            item["last_purchase_currency"] = latest_currency
 
     return items
 
