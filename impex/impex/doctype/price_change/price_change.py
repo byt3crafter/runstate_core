@@ -189,7 +189,17 @@ class PriceChange(Document):
                 frappe.delete_doc("Item Price", rule.item_price)
 
 
-def create_price_change_from_purchase_invoice(doc):
+@frappe.whitelist()
+def create_price_change_from_purchase_invoice(
+    doc=None, doctype="Purchase Invoice", doc_name=None
+):
+
+    if not doc and doctype and doc_name:
+        doc = frappe.get_cached_doc(doctype, doc_name)
+
+    if not doc:
+        frappe.throw("Document not found")
+
     if not doc.get("is_return"):
         price_change_doc = frappe.new_doc("Price Change")
         if doc.doctype == "Purchase Invoice":

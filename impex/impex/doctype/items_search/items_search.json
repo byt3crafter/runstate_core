@@ -1,0 +1,54 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-07-31 10:19:37.280234",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "search",
+  "section_break_q1ihm",
+  "results"
+ ],
+ "fields": [
+  {
+   "fieldname": "search",
+   "fieldtype": "Data",
+   "label": "Search"
+  },
+  {
+   "fieldname": "section_break_q1ihm",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "results",
+   "fieldtype": "Table",
+   "label": "Results",
+   "options": "Items Search Result"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-07-31 11:02:05.708743",
+ "modified_by": "Administrator",
+ "module": "Impex",
+ "name": "Items Search",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
