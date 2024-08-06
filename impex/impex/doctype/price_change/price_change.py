@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe.utils import flt
 from frappe.model.document import Document
 
 
@@ -313,8 +314,24 @@ def create_price_change_from_purchase_invoice(
                     )
 
         if price_change_doc.items and len(price_change_doc.items) > 0:
-            price_change_doc.save(ignore_permissions=True)
-            url = frappe.utils.get_url_to_form("Price Change", price_change_doc.name)
-            frappe.msgprint(
-                f"Price Change Created <a href='{url}'>{price_change_doc.name}</a>"
-            )
+            # check if the price change is changed
+            there_is_change = False
+            price_change_doc.calc_price_change()
+            changed_prices = []
+
+            for rule in price_change_doc.rule_prices:
+                if flt(rule.new_rate) != flt(rule.last_rate):
+                    there_is_change = True
+                    changed_prices.append(rule)
+
+            if there_is_change and changed_prices:
+                price_change_doc.rule_prices = changed_prices
+                price_change_doc.save(ignore_permissions=True)
+                url = frappe.utils.get_url_to_form(
+                    "Price Change", price_change_doc.name
+                )
+                frappe.msgprint(
+                    f"Price Change Created <a href='{url}'>{price_change_doc.name}</a>"
+                )
+            else:
+                frappe.msgprint("No Price Change Created, No Changes Found")
