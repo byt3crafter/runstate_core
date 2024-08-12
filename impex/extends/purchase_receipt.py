@@ -14,16 +14,17 @@ def validate_part_number(doc):
                 filters={
                     "supplier": doc.supplier,
                     "parent": item.item_code,
-                    "supplier_part_no": item.custom_part_number,
                     "parenttype": "Item",
                     "parentfield": "supplier_items",
                 },
-                fields=["name"],
+                fields=["name", "supplier_part_no"],
                 ignore_permissions=True,
             )
-            if not sup_parts:
-                frappe.throw(
-                    _(
-                        "Supplier Part Number {0} does is not associated with Item {1} at row {2}"
-                    ).format(item.custom_part_number, item.item_code, item.idx)
-                )
+            if sup_parts:
+                for sup_part in sup_parts:
+                    if item.custom_part_number != sup_part.supplier_part_no:
+                        frappe.throw(
+                            _(
+                                f"Custom Part Number {item.custom_part_number} does not match the Supplier Part Number {sup_part.supplier_part_no} for Item {item.item_code}"
+                            )
+                        )
