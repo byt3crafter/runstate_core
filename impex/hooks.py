@@ -134,6 +134,9 @@ doc_events = {
     "Purchase Order": {
         "on_submit": "impex.extends.purchase_invoice.on_submit",
     },
+    "Purchase Receipt": {
+        "on_submit": "impex.extends.purchase_receipt.on_submit",
+    },
 }
 
 # Scheduled Tasks
@@ -264,6 +267,8 @@ fixtures = [
                     "Item-part_10",
                     "Item-special_parameter",
                     "Item-cb_plu",
+                    "Purchase Order Item-custom_part_number",
+                    "Purchase Receipt Item-custom_part_number",
                 ],
             ]
         ],
