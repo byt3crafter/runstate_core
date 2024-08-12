@@ -18,7 +18,7 @@ def validate_part_number(doc):
                     "parenttype": "Item",
                     "parentfield": "supplier_items",
                 },
-                fields=["*"],
+                fields=["name"],
                 ignore_permissions=True,
             )
             if not sup_parts:

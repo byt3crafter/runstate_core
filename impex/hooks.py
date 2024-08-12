@@ -132,6 +132,7 @@ doc_events = {
     #     "on_submit": "impex.extends.purchase_invoice.on_submit",
     # },
     "Purchase Order": {
+        "validate": "impex.extends.purchase_order.validate",
         "on_submit": "impex.extends.purchase_invoice.on_submit",
     },
     "Purchase Receipt": {
