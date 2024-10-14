@@ -273,6 +273,7 @@ fixtures = [
                     "Item-cb_plu",
                     "Purchase Order Item-custom_part_number",
                     "Purchase Receipt Item-custom_part_number",
+                    "Purchase Order-custom_dont_regenerate_in_draft",
                 ],
             ]
         ],

@@ -425,7 +425,7 @@ def get_open_purchase_orders_items(items, company):
         f"""SELECT item_code, SUM(qty - received_qty) AS qty
             FROM `tabPurchase Order Item`
             INNER JOIN `tabPurchase Order` ON `tabPurchase Order Item`.parent = `tabPurchase Order`.name
-            WHERE `tabPurchase Order`.docstatus = 1 
+            WHERE `tabPurchase Order`.docstatus = 1 OR (`tabPurchase Order`.docstatus = 0 AND `tabPurchase Order`.dont_regenerate_in_draft = 1)
             AND `tabPurchase Order`.status != 'Closed' 
             AND `tabPurchase Order`.company = '{company}' 
             AND item_code IN {items_list}
