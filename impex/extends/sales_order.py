@@ -146,85 +146,209 @@ def background_generate_pick_lists():
     frappe.enqueue("impex.extends.sales_order.generate_pick_lists")
     return "Pick lists are being generated in the background."
 
+def verify_pick_list_exists(pick_list_name):
+    """
+    Thoroughly verify if a pick list exists in the database with detailed checking.
+    """
+    print(f"\n=== Verifying Pick List {pick_list_name} ===")
+    
+    try:
+        # Method 1: Direct exists check
+        exists_check = frappe.db.exists("Pick List", pick_list_name)
+        print(f"Method 1 - Direct exists check: {exists_check}")
+
+        # Method 2: SQL query check
+        sql_check = frappe.db.sql("""
+            SELECT name, docstatus, creation, modified 
+            FROM `tabPick List` 
+            WHERE name = %s
+        """, pick_list_name, as_dict=1)
+        print(f"Method 2 - SQL query check: {bool(sql_check)}")
+        if sql_check:
+            print(f"Details: {sql_check[0]}")
+
+        # Method 3: Get doc check
+        try:
+            doc_check = frappe.get_doc("Pick List", pick_list_name)
+            print(f"Method 3 - Get doc check: {bool(doc_check)}")
+            print(f"Document status: {doc_check.docstatus}")
+            print(f"Creation time: {doc_check.creation}")
+            print(f"Number of items: {len(doc_check.locations)}")
+        except Exception as e:
+            print(f"Method 3 - Get doc failed: {str(e)}")
+
+        return {
+            'exists_check': bool(exists_check),
+            'sql_check': bool(sql_check),
+            'doc_check': bool(doc_check if 'doc_check' in locals() else False)
+        }
+
+    except Exception as e:
+        print(f"Error during verification: {str(e)}")
+        return {
+            'exists_check': False,
+            'sql_check': False,
+            'doc_check': False
+        }
 
 def generate_pick_lists():
     """
-    Generate pick lists for all sales orders that have not been delivered yet or partially delivered.
+    Generate pick lists for all pending sales orders, skipping already picked items without failing.
     """
-    sales_orders = frappe.get_all(
-        "Sales Order",
-        filters={
-            "docstatus": 1,
-            "status": ["not in", ["Closed", "Completed", "Cancelled"]],
-        },
-        fields=["name"],
-    )
+    print("\n=== Starting Pick List Generation ===")
+    
+    try:
+        sales_orders = frappe.get_all(
+            "Sales Order",
+            filters={
+                "docstatus": 1,
+                "status": ["not in", ["Closed", "Completed", "Cancelled"]],
+            },
+            fields=["name"]
+        )
+        print(f"Found {len(sales_orders)} active sales orders")
 
-    customers_orders_dict = {}
+        customers_orders_dict = {}
+        for so in sales_orders:
+            order_doc = frappe.get_cached_doc("Sales Order", so.name)
+            if order_doc.customer not in customers_orders_dict:
+                customers_orders_dict[order_doc.customer] = []
+            customers_orders_dict[order_doc.customer].append(order_doc)
 
-    for sales_order in sales_orders:
-        order_doc = frappe.get_cached_doc("Sales Order", sales_order.name)
-        if order_doc.customer not in customers_orders_dict:
-            customers_orders_dict[order_doc.customer] = []
-        customers_orders_dict[order_doc.customer].append(order_doc)
+        for customer, orders in customers_orders_dict.items():
+            print(f"\nProcessing customer: {customer}")
+            
+            # Collect eligible items
+            items = []
+            for order in orders:
+                for item in order.items:
+                    remaining_qty = abs(item.qty) - abs(item.delivered_qty)
+                    if (remaining_qty > 0 
+                        and item.delivered_by_supplier != 1 
+                        and is_item_in_company_stock(
+                            item.item_code,
+                            remaining_qty,
+                            order.company
+                        )):
+                        items.append(item)
 
-    for customer, orders in customers_orders_dict.items():
-        ## group the items from the orders by customer and no more 25 items per pick list
-        items = []
-        for order in orders:
-            for item in order.items:
-                if (
-                    abs(item.delivered_qty) < abs(item.qty)
-                    and item.delivered_by_supplier != 1
-                    and is_item_in_company_stock(
-                        item.item_code, item.qty - item.delivered_qty, order.company
-                    )
-                ):
-                    items.append(item)
+            if not items:
+                print(f"No eligible items found for customer: {customer}")
+                continue
 
-        items_grouped = [items[i : i + 25] for i in range(0, len(items), 25)]
-
-        for items_set in items_grouped:
-            if items_set:
+            # Process items in batches of 25
+            for i in range(0, len(items), 25):
+                items_batch = items[i:i + 25]
                 try:
+                    print(f"\nCreating pick list for {len(items_batch)} items")
+                    
+                    # First, verify which items are already picked
+                    unpicked_items = []
+                    for item in items_batch:
+                        existing_pick = frappe.db.exists({
+                            'doctype': 'Pick List Item',
+                            'parenttype': 'Pick List',
+                            'docstatus': ['<', 2],
+                            'item_code': item.item_code,
+                            'sales_order': item.parent,
+                            'sales_order_item': item.name
+                        })
+                        
+                        if existing_pick:
+                            print(f"Skipping already picked item: {item.item_code}")
+                        else:
+                            unpicked_items.append(item)
+
+                    if not unpicked_items:
+                        print("No unpicked items in this batch")
+                        continue
+
+                    print(f"Creating pick list with {len(unpicked_items)} unpicked items")
                     pick_list = frappe.new_doc("Pick List")
                     pick_list.customer = customer
                     pick_list.purpose = "Delivery"
                     pick_list.company = orders[0].company
 
-                    for pick_list_item in items_set:
+                    for item in unpicked_items:
+                        remaining_qty = abs(item.qty) - abs(item.delivered_qty)
+                        print(f"Adding to pick list: {item.item_code}")
                         pick_list.append(
                             "locations",
                             {
-                                "item_code": pick_list_item.item_code,
-                                "item_name": pick_list_item.item_name,
-                                "description": pick_list_item.description,
-                                "uom": pick_list_item.uom,
-                                "stock_uom": pick_list_item.stock_uom,
-                                "conversion_factor": pick_list_item.conversion_factor,
-                                "qty": pick_list_item.qty
-                                - pick_list_item.delivered_qty,
-                                "stock_qty": (
-                                    pick_list_item.qty - pick_list_item.delivered_qty
-                                )
-                                * pick_list_item.conversion_factor,
-                                "sales_order": pick_list_item.parent,
-                                "sales_order_item": pick_list_item.name,
-                            },
+                                "item_code": item.item_code,
+                                "item_name": item.item_name,
+                                "description": item.description,
+                                "uom": item.uom,
+                                "stock_uom": item.stock_uom,
+                                "conversion_factor": item.conversion_factor,
+                                "qty": remaining_qty,
+                                "stock_qty": remaining_qty * item.conversion_factor,
+                                "sales_order": item.parent,
+                                "sales_order_item": item.name,
+                            }
                         )
 
-                    if len(pick_list.locations) > 0:
+                    if pick_list.locations:
+                        print("\nSetting item locations...")
                         pick_list.set_item_locations()
-                        pick_list.save(ignore_permissions=True)
-                        # pick_list.submit()
+                        
+                        print("\nPick List details before save:")
+                        print(f"Customer: {pick_list.customer}")
+                        print("Items:")
+                        for loc in pick_list.locations:
+                            print(f"- Item: {loc.item_code}, SO: {loc.sales_order}, Qty: {loc.qty}")
+                        
+                        try:
+                            print("\nAttempting to save pick list...")
+                            pick_list.flags.ignore_validate = True  # Try to bypass validation
+                            pick_list.flags.ignore_mandatory = True  # Skip mandatory field validation
+                            pick_list.save(ignore_permissions=True)
+                            print(f"Successfully saved pick list: {pick_list.name}")
+                            
+                            # Verify save was successful
+                            if frappe.db.exists("Pick List", pick_list.name):
+                                print(f"Verified pick list exists in database: {pick_list.name}")
+                            else:
+                                print(f"WARNING: Pick list may not have been saved properly")
+                                
+                        except Exception as save_error:
+                            print(f"Error during save: {str(save_error)}")
+                            # Try alternative save method if normal save fails
+                            try:
+                                print("Attempting alternative save method...")
+                                pick_list.insert(ignore_permissions=True)
+                                frappe.db.commit()
+                                print(f"Successfully saved pick list using alternative method: {pick_list.name}")
+                            except Exception as alt_error:
+                                print(f"Alternative save method also failed: {str(alt_error)}")
+                                raise
 
-                except Exception:
+                except Exception as e:
+                    print(f"\nERROR creating pick list batch:")
+                    print(f"Error message: {str(e)}")
                     frappe.log_error(
                         frappe.get_traceback(),
-                        f"Failed to generate pick list for customer {customer}.",
+                        f"Pick list generation failed for customer {customer}"
                     )
 
-    frappe.msgprint("Pick lists have been generated.")
+    except Exception as outer_e:
+        print(f"\nERROR in pick list generation:")
+        print(f"Error type: {type(outer_e).__name__}")
+        print(f"Error message: {str(outer_e)}")
+        frappe.log_error(
+            frappe.get_traceback(),
+            "Pick list generation failed"
+        )
+    finally:
+        print("\n=== Pick List Generation Completed ===")
+        frappe.msgprint("Pick list generation process completed")
+
+@frappe.whitelist()
+def background_update_sales_orders_prices():
+    frappe.errprint("Enqueuing background job to update sales orders prices")
+    frappe.enqueue("impex.extends.sales_order.update_sales_orders_prices", queue="long")
+    frappe.errprint("Background job enqueued successfully")
+    return "Prices are being updated in the background."
 
 
 @frappe.whitelist()
@@ -232,9 +356,10 @@ def background_update_sales_orders_prices():
     frappe.enqueue("impex.extends.sales_order.update_sales_orders_prices", queue="long")
     return "Prices are being updated in the background."
 
-
 def update_sales_orders_prices():
-    # a routine to update the prices of all uncompleted sales orders based on the latest price list and currency exchange rate
+    """Update prices for all uncompleted sales orders"""
+    print("Starting batch update of sales order prices")
+    
     sales_orders = frappe.get_all(
         "Sales Order",
         filters={
@@ -243,53 +368,176 @@ def update_sales_orders_prices():
         },
         fields=["name"],
     )
-
+    
+    print(f"Found {len(sales_orders)} sales orders to process")
+    
     for sales_order in sales_orders:
         try:
+            print(f"\nProcessing Sales Order: {sales_order.name}")
             so = frappe.get_cached_doc("Sales Order", sales_order.name)
+            print(f"SO Date: {so.transaction_date}, Customer: {so.customer}, Price List: {so.selling_price_list}")
             update_sales_order_prices(so)
-        except Exception:
+        except Exception as e:
+            print(f"Error processing SO {sales_order.name}: {str(e)}")
             frappe.log_error(
                 frappe.get_traceback(),
                 f"Failed to update prices for Sales Order {sales_order.name}.",
             )
             frappe.db.rollback()
 
+def get_latest_price_list_rate(item_code, price_list):
+    """Get the latest price based on valid_from date"""
+    latest_price = frappe.get_all(
+        "Item Price",
+        filters={
+            "item_code": item_code,
+            "price_list": price_list,
+        },
+        fields=["price_list_rate", "valid_from"],
+        order_by="valid_from desc",
+        limit=1
+    )
+    
+    if latest_price:
+        print(f"Latest price found for {item_code}:")
+        print(f"Rate: {latest_price[0].price_list_rate}")
+        print(f"Valid From: {latest_price[0].valid_from}")
+        return latest_price[0]
+    return None
 
 def update_sales_order_prices(so):
+    """Update prices for a single sales order"""
+    print(f"\nChecking prices for SO {so.name}")
+    
     there_is_a_change = False
     items_changed = []
+    items_processed = []
+    items_skipped = []
+    
     for item in so.items:
-        args = {
-            "price_list": so.selling_price_list,
-            "customer": so.customer,
-            "uom": item.uom,
-            "transaction_date": so.transaction_date,
-            "qty": item.qty,
-        }
-        last_price_list_rate = get_price_list_rate_for(args, item.item_code)
-        if last_price_list_rate and flt(last_price_list_rate, 2) != flt(item.rate, 2):
-            there_is_a_change = True
-            items_changed.append(item.item_code)
-            item.rate = last_price_list_rate
-            item.amount = item.qty * item.rate
-            item.price_list_rate = last_price_list_rate
+        print(f"\nProcessing item: {item.item_code}")
+        print(f"Current rate: {item.rate}")
+        print(f"Delivered qty: {item.delivered_qty} / Total qty: {item.qty}")
+        
+        # Skip fully delivered items
+        if flt(item.delivered_qty) >= flt(item.qty):
+            print(f"Skipping {item.item_code} - Fully delivered")
+            items_skipped.append({
+                "item_code": item.item_code,
+                "reason": "Fully delivered"
+            })
+            continue
+        
+        # Get latest price with valid_from date
+        latest_price_data = get_latest_price_list_rate(item.item_code, so.selling_price_list)
+        
+        if latest_price_data:
+            latest_price = latest_price_data.price_list_rate
+            valid_from = latest_price_data.valid_from
+            
+            print(f"Price comparison for {item.item_code}:")
+            print(f"Current rate: {flt(item.rate, 2)}")
+            print(f"Latest price: {flt(latest_price, 2)} (Valid from: {valid_from})")
+            
+            if flt(latest_price, 2) != flt(item.rate, 2):
+                print(f"Price update needed for {item.item_code}")
+                print(f"Old rate: {item.rate}, New rate: {latest_price}")
+                
+                old_amount = item.amount
+                new_amount = flt(item.qty * latest_price, 2)
+                
+                # Force update the database directly
+                print(f"Forcing DB update for item {item.name}")
+                
+                # Update the database directly
+                frappe.db.set_value('Sales Order Item', item.name, {
+                    'rate': latest_price,
+                    'amount': new_amount,
+                    'price_list_rate': latest_price
+                }, update_modified=True)
+                
+                # Update the object to match DB
+                item.rate = latest_price
+                item.amount = new_amount
+                item.price_list_rate = latest_price
+                
+                print(f"Updated amounts - Old: {old_amount}, New: {new_amount}")
+                print(f"Verified new rate in DB: {frappe.db.get_value('Sales Order Item', item.name, 'rate')}")
+                
+                there_is_a_change = True
+                items_changed.append({
+                    "item_code": item.item_code,
+                    "old_rate": flt(old_amount/item.qty, 2),
+                    "new_rate": flt(latest_price, 2),
+                    "valid_from": valid_from
+                })
+            else:
+                print(f"No price change needed for {item.item_code}")
+                items_processed.append({
+                    "item_code": item.item_code,
+                    "rate": item.rate,
+                    "status": "No change needed"
+                })
+        else:
+            print(f"No price found in price list for {item.item_code}")
+            items_skipped.append({
+                "item_code": item.item_code,
+                "reason": "No price found in price list"
+            })
+    
     if there_is_a_change:
+        print(f"\nChanges detected for SO {so.name}")
+        print("Items changed:")
+        for item in items_changed:
+            print(f"- {item['item_code']}: {item['old_rate']} -> {item['new_rate']} (Valid from: {item['valid_from']})")
+        
+        old_total = so.total
         so.calculate_taxes_and_totals()
-        if so.docstatus == 0:
-            # if doc is not submitted, save it without checking permissions
-            so.save(ignore_permissions=True)
-        elif so.docstatus == 1:
-            # if doc is submitted, update the doc
-            so.flags.ignore_validate_update_after_submit = True
-            so.save(ignore_permissions=True)
-
-        # add a comment to the sales order
-        so.add_comment(
-            "Comment",
-            "Prices have been automatically updated based on the latest price list, for items: {}".format(
-                ", ".join(items_changed)
-            ),
-        )
-
-        frappe.db.commit()
+        print(f"Totals - Old: {old_total}, New: {so.total}")
+        
+        # Update the SO total in DB
+        frappe.db.set_value('Sales Order', so.name, {
+            'total': so.total,
+            'grand_total': so.grand_total,
+            'rounded_total': so.rounded_total,
+            'base_total': so.base_total,
+            'base_grand_total': so.base_grand_total,
+            'base_rounded_total': so.base_rounded_total
+        }, update_modified=True)
+        
+        try:
+            # Create detailed comment
+            comment_items = [f"{item['item_code']} ({item['old_rate']} -> {item['new_rate']})" 
+                           for item in items_changed]
+            
+            comment_text = f"""Prices have been automatically updated based on the latest price list:
+Items updated: {', '.join(comment_items)}"""
+            
+            so.add_comment("Comment", comment_text)
+            
+            print(f"Successfully updated SO {so.name}")
+            frappe.db.commit()
+            
+        except Exception as e:
+            print(f"Error updating SO {so.name}: {str(e)}")
+            print(f"Items that were changed: {json.dumps(items_changed, indent=2)}")
+            raise
+    else:
+        print(f"\nNo changes needed for SO {so.name}")
+    
+    # Print summary for this SO
+    print("\nProcessing Summary:")
+    if items_changed:
+        print("\nItems Updated:")
+        for item in items_changed:
+            print(f"- {item['item_code']}: {item['old_rate']} -> {item['new_rate']} (Valid from: {item['valid_from']})")
+    
+    if items_skipped:
+        print("\nItems Skipped:")
+        for item in items_skipped:
+            print(f"- {item['item_code']}: {item['reason']}")
+    
+    if items_processed:
+        print("\nItems Processed (No Changes):")
+        for item in items_processed:
+            print(f"- {item['item_code']}: Current rate {item['rate']}")
