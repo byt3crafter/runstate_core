@@ -95,17 +95,19 @@ class PriceChange(Document):
         supplier_doc = frappe.get_cached_doc("Supplier", self.supplier)
         prices_to_update = []
         prices_to_create = []
+        rules_to_update = []  # Track rules that need item_price update
         supplier_rules_modified = False
 
         for rule in self.rule_prices:
             if flt(rule.new_rate, 2) != flt(rule.last_rate, 2):
                 # Check if price exists
-                existing_price = frappe.db.exists(
+                existing_price = frappe.db.get_value(
                     "Item Price",
                     {
                         "item_code": rule.item_code,
                         "price_list": rule.price_list,
                     },
+                    "name",
                 )
 
                 price_data = {
@@ -114,12 +116,15 @@ class PriceChange(Document):
                     "price_list_rate": rule.new_rate,
                     "valid_from": self.posting_date,
                     "valid_upto": None,
+                    "doctype": "Item Price",
                 }
 
                 if existing_price:
-                    prices_to_update.append({"name": existing_price, **price_data})
+                    prices_to_update.append(
+                        {"name": existing_price, "rule": rule, **price_data}
+                    )
                 else:
-                    prices_to_create.append(price_data)
+                    prices_to_create.append({"rule": rule, **price_data})
 
             # Update supplier rules if needed
             if rule.update_sp:
@@ -129,17 +134,40 @@ class PriceChange(Document):
         # Bulk update/create prices
         if prices_to_update:
             for price in prices_to_update:
+                rule = price.pop("rule")
                 doc = frappe.get_cached_doc("Item Price", price.pop("name"))
                 doc.update(price)
                 doc.save(ignore_permissions=True)
+                # Track rule and item_price for update
+                rules_to_update.append({"name": rule.name, "item_price": doc.name})
+                # Update rule's item_price in memory
+                rule.item_price = doc.name
 
         if prices_to_create:
             for price in prices_to_create:
-                doc = frappe.get_doc({"doctype": "Item Price", **price})
+                rule = price.pop("rule")
+                doc = frappe.get_doc(price)  # price_data already includes doctype
                 doc.insert(ignore_permissions=True)
+                # Track rule and item_price for update
+                rules_to_update.append({"name": rule.name, "item_price": doc.name})
+                # Update rule's item_price in memory
+                rule.item_price = doc.name
 
         if supplier_rules_modified:
             supplier_doc.save(ignore_permissions=True)
+
+        # Update item_price values directly in the database
+        if rules_to_update:
+            # Bulk update all rules at once
+            for rule_update in rules_to_update:
+                frappe.db.set_value(
+                    "Price Change Rule",
+                    rule_update["name"],
+                    "item_price",
+                    rule_update["item_price"],
+                    update_modified=False,
+                )
+            frappe.db.commit()
 
     def update_supplier_rule(self, supplier_doc, rule):
         """Update supplier pricing rules"""
@@ -176,10 +204,104 @@ class PriceChange(Document):
         return modified
 
     def delete_items_prices(self):
-        """Bulk delete created item prices"""
-        item_prices = [r.item_price for r in self.rule_prices if r.item_price]
-        if item_prices:
-            frappe.db.delete("Item Price", {"name": ["in", item_prices]})
+        """Restore/delete item prices based on version history"""
+        item_prices_to_delete = []
+        item_prices_to_restore = []
+
+        # Get all item prices that need to be handled
+        all_item_prices = [r.item_price for r in self.rule_prices if r.item_price]
+        if not all_item_prices:
+            return
+
+        # Get all versions for item prices created/updated by this document
+        versions = frappe.get_all(
+            "Version",
+            filters={
+                "ref_doctype": "Item Price",
+                "docname": ["in", all_item_prices],
+            },
+            fields=["name", "docname", "data", "creation"],
+            order_by="creation desc",  # Get newest versions first
+        )
+
+        # Group versions by item price
+        versions_by_price = {}
+        for version in versions:
+            if version.docname not in versions_by_price:
+                versions_by_price[version.docname] = []
+            versions_by_price[version.docname].append(version)
+
+        for item_price, item_versions in versions_by_price.items():
+            # Get the first (newest) version
+            first_version = item_versions[0]
+            version_data = frappe.parse_json(first_version.data)
+
+            # Check if this was a new item price or an update
+            if version_data.get("added"):
+                # If it was newly created, we should delete it
+                item_prices_to_delete.append(first_version.docname)
+            elif version_data.get("changed"):
+                # If it was an update, we should restore the old values
+                restore_data = {}
+                for field, old_value, new_value in version_data["changed"]:
+                    if field == "price_list_rate":
+                        # Handle currency formatted values
+                        try:
+                            # Remove currency symbol and convert to float
+                            old_value = float(
+                                old_value.replace("₺", "")
+                                .replace(".", "")
+                                .replace(",", ".")
+                                .strip()
+                            )
+                        except Exception:
+                            continue
+                    elif field in ["valid_from", "valid_upto"]:
+                        # Convert date string to proper format if it's a date field
+                        if old_value:
+                            try:
+                                # Parse the date string and convert to YYYY-MM-DD
+                                parsed_date = frappe.utils.get_datetime(old_value)
+                                old_value = parsed_date.strftime("%Y-%m-%d")
+                            except Exception:
+                                continue
+
+                    restore_data[field] = old_value
+
+                if restore_data:
+                    item_prices_to_restore.append(
+                        {"name": first_version.docname, "data": restore_data}
+                    )
+
+        # Add prices without versions to delete list (they must be new)
+        prices_with_versions = set(versions_by_price.keys())
+        prices_without_versions = set(all_item_prices) - prices_with_versions
+        if prices_without_versions:
+            item_prices_to_delete.extend(list(prices_without_versions))
+
+        # Bulk restore old values
+        for item_price in item_prices_to_restore:
+            try:
+                doc = frappe.get_doc("Item Price", item_price["name"])
+                doc.update(item_price["data"])
+                doc.save(ignore_permissions=True)
+            except Exception as e:
+                error_msg = str(e)
+                if len(error_msg) > 100:
+                    error_msg = error_msg[:97] + "..."
+                frappe.log_error(
+                    f"Failed to restore Item Price {item_price['name']}: {error_msg}"
+                )
+
+        # Bulk delete newly created prices
+        if item_prices_to_delete:
+            try:
+                frappe.db.delete("Item Price", {"name": ["in", item_prices_to_delete]})
+            except Exception as e:
+                error_msg = str(e)
+                if len(error_msg) > 100:
+                    error_msg = error_msg[:97] + "..."
+                frappe.log_error(f"Failed to delete Item Prices: {error_msg}")
 
 
 @frappe.whitelist()
@@ -332,7 +454,7 @@ def create_price_change_from_purchase_invoice(
                     changed_prices.append(rule)
                 # update if no last rate or rate change is greater than 2
                 elif item_row and (
-                    not new_item.last_rate or abs(item_row.rate_change) > 2
+                    not item_row.last_rate or abs(item_row.rate_change) > 2
                 ):
                     changed_prices.append(rule)
 
