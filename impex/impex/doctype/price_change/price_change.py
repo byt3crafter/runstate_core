@@ -244,6 +244,15 @@ def create_price_change_from_purchase_invoice(
             if last_rates:
                 latest_rate = last_rates[0][0]
                 new_item.last_rate = latest_rate
+                # calculate rate change percentage positive or negative
+                if latest_rate and flt(latest_rate, 2) != flt(new_item.base_rate, 2):
+                    new_item.rate_change = flt(
+                        ((new_item.base_rate - latest_rate) / new_item.base_rate) * 100,
+                        2,
+                    )
+
+                else:
+                    new_item.rate_change = 0
 
             # get rules price from item group
             item_group_doc = frappe.get_cached_doc("Item Group", item.item_group)
@@ -315,6 +324,9 @@ def create_price_change_from_purchase_invoice(
 
         if price_change_doc.items and len(price_change_doc.items) > 0:
             # check if the price change is changed
+            price_change_doc_items_dict = {}
+            for item in price_change_doc.items:
+                price_change_doc_items_dict[item.item_code] = item
             there_is_change = False
             price_change_doc.calc_price_change()
             changed_prices = []
@@ -322,7 +334,15 @@ def create_price_change_from_purchase_invoice(
             for rule in price_change_doc.rule_prices:
                 if flt(rule.new_rate) != flt(rule.last_rate):
                     there_is_change = True
-                    changed_prices.append(rule)
+                    item_row = price_change_doc_items_dict.get(rule.item_code)
+                    # Apply only for buying price list or selling price list if item rate change is more than 2%
+                    # check if the price list is selling or buying
+                    if "Buying" in rule.price_list:
+                        changed_prices.append(rule)
+                    else:
+                        # check for item Rate Change is more than 2%
+                        if item_row and abs(item_row.rate_change) > 2:
+                            changed_prices.append(rule)
 
             if there_is_change and changed_prices:
                 price_change_doc.rule_prices = changed_prices
