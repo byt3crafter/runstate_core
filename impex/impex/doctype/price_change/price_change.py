@@ -128,25 +128,20 @@ class PriceChange(Document):
                     )
             # update item price if rate changed
             if flt(rule.new_rate, 2) != flt(rule.last_rate, 2):
-                item_price = frappe.db.get_value(
+                item_price_doc = frappe.get_cached_doc(
                     "Item Price",
                     {
                         "item_code": rule.item_code,
                         "price_list": rule.price_list,
-                        "valid_from": self.posting_date,
                     },
-                    "name",
                 )
-                if item_price:
-                    frappe.db.set_value(
-                        "Item Price",
-                        item_price,
-                        "price_list_rate",
-                        rule.new_rate,
-                    )
+                if item_price_doc:
+                    item_price_doc.price_list_rate = rule.new_rate
+                    item_price_doc.valid_from = self.posting_date
+                    item_price_doc.save(ignore_permissions=True)
                 # rule.item_price = item_price
                 else:
-                    item_price = frappe.get_doc(
+                    item_price_doc = frappe.get_doc(
                         {
                             "doctype": "Item Price",
                             "item_code": rule.item_code,
@@ -155,8 +150,10 @@ class PriceChange(Document):
                             "valid_from": self.posting_date,
                         }
                     ).insert(ignore_permissions=True)
+
+                if item_price_doc and item_price_doc.get("name"):
                     # set item_price in rule
-                    rule.item_price = item_price.name
+                    rule.item_price = item_price_doc.name
             # update supplier in supplier doctype in rule_prices child table
             if rule.update_sp:
                 # check if the rule is exist in supplier doctype
