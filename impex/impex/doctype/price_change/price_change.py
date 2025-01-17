@@ -127,7 +127,7 @@ class PriceChange(Document):
                         f"Base Price List {rule.base_price_list} not found for Price List {rule.price_list}"
                     )
             # update item price if rate changed
-            if rule.new_rate != rule.last_rate:
+            if flt(rule.new_rate, 2) != flt(rule.last_rate, 2):
                 item_price = frappe.db.get_value(
                     "Item Price",
                     {
@@ -332,7 +332,7 @@ def create_price_change_from_purchase_invoice(
             changed_prices = []
 
             for rule in price_change_doc.rule_prices:
-                if flt(rule.new_rate) != flt(rule.last_rate):
+                if flt(rule.new_rate, 2) != flt(rule.last_rate, 2):
                     there_is_change = True
                     item_row = price_change_doc_items_dict.get(rule.item_code)
                     # Apply only for buying price list or selling price list if item rate change is more than 2%
