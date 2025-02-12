@@ -1,0 +1,5 @@
+[pre_model_sync]
+impex.patches.p1_migrate_bin_location_item
+
+
+[post_model_sync]
