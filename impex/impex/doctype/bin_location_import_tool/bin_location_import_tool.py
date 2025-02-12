@@ -160,7 +160,3 @@ def execute_action(doctype, name, action, **kwargs):
 		frappe.db.set_value(doctype, name, 'queue_comment', msg, update_modified=False)
 		doc.notify_update()
 
-def test():
-	doc = frappe.get_doc("Bin Location Import Tool", "gsppldn53q")
-	doc.submit()
-
