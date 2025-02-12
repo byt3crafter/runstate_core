@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "format:BLIT-{###}",
  "creation": "2025-02-11 20:04:34.185753",
  "default_view": "List",
  "doctype": "DocType",
@@ -40,6 +41,7 @@
    "fieldname": "queue_failed",
    "fieldtype": "Check",
    "label": "Queue Failed",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -47,6 +49,7 @@
    "fieldname": "queue_status",
    "fieldtype": "Select",
    "label": "Queue Status",
+   "no_copy": 1,
    "options": "Not Queued\nQueued\nCompleted\nFailed",
    "read_only": 1
   },
@@ -55,6 +58,7 @@
    "fieldname": "queue_comment",
    "fieldtype": "Small Text",
    "label": "Queue Error",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -66,6 +70,7 @@
    "fieldname": "queued_date",
    "fieldtype": "Datetime",
    "label": "Queue Date",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -73,6 +78,7 @@
    "fieldname": "queued_by",
    "fieldtype": "Link",
    "label": "Queued By",
+   "no_copy": 1,
    "options": "User",
    "read_only": 1
   },
@@ -95,6 +101,7 @@
    "fieldname": "error_log",
    "fieldtype": "Table",
    "label": "Errors",
+   "no_copy": 1,
    "options": "Bin Location Import Error",
    "read_only": 1
   },
@@ -118,10 +125,11 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-02-12 03:07:19.675679",
+ "modified": "2025-02-12 05:39:36.369168",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Bin Location Import Tool",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {

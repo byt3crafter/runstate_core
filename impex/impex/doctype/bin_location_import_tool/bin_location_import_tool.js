@@ -2,7 +2,13 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Bin Location Import Tool', {
-	// refresh: function(frm) {
-
-	// }
+	refresh: function(frm) {
+		frm.set_query('warehouse', function() {
+			return {
+				filters: {
+					'company': frm.doc.company
+				}
+			};
+		});
+	}
 });

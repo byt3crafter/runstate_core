@@ -71,10 +71,14 @@ class BinLocationImportTool(Document):
 			if row[4] is None or row[4] == "":
 				continue
 			
+			# If the entries are regggarded as float type, change them to int to remove the decimal point
 			if isinstance(row[0], float):
 				row[0] = int(row[0])
 			if isinstance(row[1], float):
 				row[1] = int(row[1])
+			if isinstance(row[4], float):
+				row[4] = int(row[4])
+
 			item_code = f"{str(row[0])}-{str(row[1])}"
 
 			item_exists = frappe.db.exists("Item", {"item_code": item_code})
@@ -82,7 +86,7 @@ class BinLocationImportTool(Document):
 				self.log_error(item_code, f"Item code {item_code} not found")
 				continue
 
-			bin = frappe.db.exists("Bin Location", row[4])
+			bin = frappe.db.exists("Bin Location", {"location": row[4]})
 			if bin:
 				bin = frappe.get_doc("Bin Location", bin)
 			else:
