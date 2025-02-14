@@ -12,7 +12,7 @@ app_license = "MIT"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/impex/css/impex.css"
-# app_include_js = "/assets/impex/js/impex.js"
+# app_include_js = ["impex.bundle.js"]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/impex/css/impex.css"
@@ -29,7 +29,10 @@ app_license = "MIT"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-doctype_js = {"Purchase Invoice": "public/js/purchase_invoice.js"}
+doctype_js = {
+	"Purchase Invoice": "public/js/purchase_invoice.js",
+	"Item": "public/js/item.js"
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -274,6 +277,14 @@ fixtures = [
                     "Purchase Order Item-custom_part_number",
                     "Purchase Receipt Item-custom_part_number",
                     "Purchase Order-custom_dont_regenerate_in_draft",
+                    "Sales Order Item-custom_inter_company_purchase",
+                    "Sales Order Item-custom_branch_purchase_order",
+                    "Sales Order Item-custom_column_break_idb1m",
+                    "Sales Order Item-custom_branch_purchase_order_item",
+                    "Sales Invoice Item-custom_branch_purchase_order_item",
+                    "Sales Invoice Item-custom_column_break_lnulu",
+                    "Sales Invoice Item-custom_branch_purchase_order",
+					"Sales Invoice Item-custom_inter_company_purchase"
                 ],
             ]
         ],
