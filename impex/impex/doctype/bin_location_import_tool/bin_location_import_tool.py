@@ -102,12 +102,22 @@ class BinLocationImportTool(Document):
 
 			# If location exists, check if it's in the bin, if not, then delete it
 			location_exists = frappe.db.exists("Bin Location Item", {"item_code": item_code})
-			if location_exists:
-				attached_bin = frappe.db.get_value("Bin Location Item", location_exists, "parent")
-				if attached_bin == bin.name:
+			location_exists = frappe.db.sql("""
+						SELECT
+							bli.name, parent
+						FROM
+							`tabBin Location Item` AS bli
+						LEFT JOIN
+							`tabBin Location` AS bl ON bli.parent = bl.name
+						WHERE
+							bl.warehouse = %(warehouse)s AND bli.item_code = %(item_code)s
+						LIMIT 1
+						""", {"warehouse": self.warehouse, "item_code": item_code}, as_dict=1)
+			if location_exists and len(location_exists) > 0:
+				if location_exists[0].parent == bin.name:
 					continue
 				else:
-					frappe.db.delete("Bin Location Item", {"name": location_exists})
+					frappe.db.delete("Bin Location Item", {"name": location_exists[0].name})
 			
 			bin.append("items", {
 				"item_code": item_code

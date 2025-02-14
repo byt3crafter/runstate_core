@@ -41,7 +41,7 @@ frappe.ui.form.on("Item", {
 				section.empty(); // Clear existing content if any
 				section.html(html); // Insert the table into the section body
 			  } else {
-				section.html(__("No Bin location data found for this Item."));
+				section.html(`<center>${__("No bin location data found for this Item.")}</center>`);
 			  }
 			  frm.events.change_location_button(frm, section);
 			}
