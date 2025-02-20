@@ -14,8 +14,8 @@ class PurchaseOrderGenerator(Document):
     def on_submit(self):
         self.validate_mandatory_fields()
         purchase_orders = self.create_purchase_orders()
-        if len(purchase_orders) > 0 and self.inter_company_transaction:
-            self.create_sales_order()
+        if len(purchase_orders) > 0 and self.inter_company_purchase:
+            self.create_sales_order(purchase_orders)
 
     def validate_mandatory_fields(self):
         if not self.items:
@@ -45,6 +45,7 @@ class PurchaseOrderGenerator(Document):
                 )
 
     def create_purchase_orders(self):
+        purchase_orders = []
         # group items by supplier and create a purchase order for each supplier
         today_date = getdate()
         items = {}
@@ -125,6 +126,8 @@ class PurchaseOrderGenerator(Document):
                 frappe.msgprint(
                     f"""Purchase Order <a href="{link}">{purchase_order.name}</a>  is created for supplier {supplier}"""
                 )
+                purchase_orders.append(purchase_order.name)
+        return purchase_orders
 
     @frappe.whitelist()
     def get_items(self):
