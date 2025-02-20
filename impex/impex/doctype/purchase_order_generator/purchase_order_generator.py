@@ -13,7 +13,9 @@ class PurchaseOrderGenerator(Document):
 
     def on_submit(self):
         self.validate_mandatory_fields()
-        self.create_purchase_orders()
+        purchase_orders = self.create_purchase_orders()
+        if len(purchase_orders) > 0 and self.inter_company_transaction:
+            self.create_sales_order()
 
     def validate_mandatory_fields(self):
         if not self.items:
@@ -54,6 +56,11 @@ class PurchaseOrderGenerator(Document):
                 items[item.purchase_supplier][-1].append(item)
             else:
                 items[item.purchase_supplier].append([item])
+        
+        # Get the default warehouse for the company
+        warehouse = frappe.db.get_value("Impex Company Settings", {"company": self.company}, "default_warehouse")
+        if not warehouse or warehouse == "":
+            frappe.throw(f"Please set the default warehouse for {self.company} in Impex Settings")
 
         for supplier in items:
             for items_list in items[supplier]:
@@ -88,6 +95,7 @@ class PurchaseOrderGenerator(Document):
                                 if getdate(item.purchase_date) > today_date
                                 else today_date
                             ),
+                            "warehouse": warehouse
                         },
                     )
                 purchase_order.save(ignore_permissions=True)
@@ -163,13 +171,34 @@ class PurchaseOrderGenerator(Document):
         items = get_open_purchase_orders_items(items, self.company)
 
         # update the items table
+        # If it's an inter-company transaction, replace the supplier with a supplier
+        # representing the main company
+        main_company_supplier = None
+        if self.inter_company_purchase:
+            main_company = frappe.db.get_single_value("Impex Settings", "main_company")
+            
+            if not main_company or main_company == "":
+                frappe.throw("Please set the main company in Impex Settings to enable inter-company purchase functions")
+                
+            main_company_supplier = frappe.db.get_value("Supplier", {"represents_company": main_company}, "name")
+        
+            if main_company_supplier is None or main_company_supplier == "":
+                frappe.throw(f"Please create a supplier for {main_company} to enable inter-company purchase functions")
+
+            main_company_warehouse = frappe.db.get_single_value("Impex Settings", "main_company_warehouse")
+            if not main_company_warehouse or main_company_warehouse == "":
+                frappe.throw("Pleae set the default warehouse of the main company in Impex Settings")
+        
         self.items = []
         for item in items:
             item = frappe._dict(item)
             # set required purchase qty for each item
             self.set_required_purchase_qty(item)
             if item.purchase_qty > 0:
-                if self.supplier:
+                if self.inter_company_purchase:
+                    item.purchase_supplier = main_company_supplier
+                    self.append("items", item)
+                elif self.supplier:
                     if item.cheapest_purchase_supplier == self.supplier:
                         self.append("items", item)
                 else:
@@ -194,6 +223,31 @@ class PurchaseOrderGenerator(Document):
         item.purchase_currency = (
             item.cheapest_purchase_currency or item.last_purchase_currency
         )
+        
+    def create_sales_order(self, purchase_orders):
+        for purchase_order in purchase_orders:
+            po = frappe.get_doc("Purchase Order", purchase_order)
+            customer = frappe.db.get_value("Impex Company Settings", {"company": self.company}, "company_customer")
+            company = frappe.db.get_single_value("Impex Settings", "main_company")
+            warehouse = frappe.db.get_single_value("Impex Settings", "main_company_warehouse")
+            so = frappe.new_doc("Sales Order")
+            so.update({
+                "company": company,
+                "customer": customer
+            })
+            
+            for item in po.items:
+                so.append("items", {
+                    "item_code": item.item_code,
+                    "delivery_date": item.schedule_date,
+                    "qty": item.qty,
+                    "uom": item.uom,
+                    "rate": item.rate,
+                    "custom_branch_purchase_order": po.name,
+                    "custom_branch_purchase_order_item": item.name,
+                    "warehouse": warehouse
+                })
+            so.save(ignore_permissions=True)
 
 
 def get_items_from_sales_orders(
@@ -316,7 +370,8 @@ def get_latest_purchase_transactions_record_for_each_supplier(
             f"""SELECT DISTINCT P.supplier AS supplier, P.posting_date AS date, PI.qty, PI.rate, PI.amount, P.currency
                 FROM `tabPurchase Invoice Item` PI
                 INNER JOIN `tabPurchase Invoice` P ON PI.parent = P.name
-                WHERE PI.item_code = '{item["item_code"]}' AND P.company = '{company}' AND P.custom_special_order = 0 AND P.docstatus = 1 and P.is_return = 0 and P.posting_date BETWEEN '{from_date}' AND '{to_date}'
+                WHERE PI.item_code = '{item["item_code"]}' AND P.company = '{company}' AND P.custom_special_order = 0 AND P.docstatus = 1 
+                	and P.is_return = 0 and P.posting_date BETWEEN '{from_date}' AND '{to_date}'
                 ORDER BY P.posting_date ASC""",
             as_dict=True,
         )
@@ -498,3 +553,8 @@ def get_items_sales(company, from_date, to_date, item_group=None, items=None):
 
     else:
         return items_data
+
+def test():
+    pog = frappe.get_doc("Purchase Order Generator", "POG-25-0000004")
+    pos = ["PUR-ORD-2025-00010"]
+    pog.create_sales_order(pos)

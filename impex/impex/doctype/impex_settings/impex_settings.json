@@ -8,7 +8,11 @@
  "engine": "InnoDB",
  "field_order": [
   "create_pick_list",
-  "update_sales_orders_prices"
+  "update_sales_orders_prices",
+  "section_purichase_order_generator",
+  "main_company",
+  "main_company_warehouse",
+  "default_company_settings"
  ],
  "fields": [
   {
@@ -20,12 +24,35 @@
    "fieldname": "update_sales_orders_prices",
    "fieldtype": "Button",
    "label": "Update Sales Orders Prices"
+  },
+  {
+   "fieldname": "section_purichase_order_generator",
+   "fieldtype": "Section Break",
+   "label": "Purochase Order Generator Settings"
+  },
+  {
+   "fieldname": "main_company",
+   "fieldtype": "Link",
+   "label": "Main Company (for inter-company purchases)",
+   "options": "Company"
+  },
+  {
+   "fieldname": "default_company_settings",
+   "fieldtype": "Table",
+   "label": "Default Company Settings",
+   "options": "Impex Company Settings"
+  },
+  {
+   "fieldname": "main_company_warehouse",
+   "fieldtype": "Link",
+   "label": "Main Company Default Sales Warehouse",
+   "options": "Warehouse"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-06-27 04:00:48.378349",
+ "modified": "2025-02-09 15:41:21.410171",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Impex Settings",

@@ -1,0 +1,19 @@
+{
+ "content": null,
+ "creation": "2025-02-09 18:36:55.685402",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2025-02-09 18:36:55.685402",
+ "modified_by": "Administrator",
+ "module": "Impex",
+ "name": "invoice-receipt",
+ "owner": "Administrator",
+ "page_name": "invoice-receipt",
+ "roles": [],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Invoice Receipt"
+}

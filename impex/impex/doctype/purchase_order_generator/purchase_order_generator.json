@@ -10,6 +10,7 @@
   "type",
   "company",
   "amended_from",
+  "inter_company_purchase",
   "column_break_cwyrt",
   "date",
   "months_required",
@@ -119,12 +120,18 @@
    "fieldtype": "Link",
    "label": "Supplier",
    "options": "Supplier"
+  },
+  {
+   "default": "0",
+   "fieldname": "inter_company_purchase",
+   "fieldtype": "Check",
+   "label": "Inter Company Purchase"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-05-08 22:35:57.290473",
+ "modified": "2025-02-09 00:52:57.376823",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Purchase Order Generator",

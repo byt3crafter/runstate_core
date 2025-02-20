@@ -2,9 +2,24 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Impex Settings", {
-  // refresh: function(frm) {
+  refresh: function(frm) {
+	frm.set_query("default_warehouse", "default_company_settings", function(doc, cdt, cdn) {
+		var row = locals[cdt][cdn];
+		return {
+			filters: {
+				'company': row.company
+			}
+		};
+	});
 
-  // }
+	frm.set_query("main_company_warehouse",  function(){
+		return {
+			filters: {
+				"company": frm.doc.main_company
+			}
+		}
+	});
+  },
 
   create_pick_list: function (frm) {
     frappe.call({

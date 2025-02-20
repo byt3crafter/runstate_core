@@ -1,0 +1,1 @@
+import "./invoice_receipt/invoice_receipt.js";

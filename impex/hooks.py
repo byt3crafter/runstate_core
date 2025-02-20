@@ -12,7 +12,7 @@ app_license = "MIT"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/impex/css/impex.css"
-# app_include_js = ["impex.bundle.js"]
+app_include_js = ["impex.bundle.js"]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/impex/css/impex.css"
@@ -284,7 +284,12 @@ fixtures = [
                     "Sales Invoice Item-custom_branch_purchase_order_item",
                     "Sales Invoice Item-custom_column_break_lnulu",
                     "Sales Invoice Item-custom_branch_purchase_order",
-					"Sales Invoice Item-custom_inter_company_purchase"
+                    "Sales Invoice Item-custom_inter_company_purchase",
+                    "Sales Invoice-custom_purchase_order_receipt",
+                    "Sales Invoice-custom_column_break_fzrxb",
+					"Sales Invoice-custom_receipt_status",
+					"Sales Invoice-custom_receipt_date",
+					"Sales Invoice-custom_received_by"
                 ],
             ]
         ],
