@@ -99,7 +99,8 @@ class PurchaseOrderGenerator(Document):
                             "warehouse": warehouse
                         },
                     )
-                purchase_order.save(ignore_permissions=True)
+                #purchase_order.save(ignore_permissions=True)
+                purchase_order.submit()
                 purchase_order.reload()
 
                 # set the purchase order name and item row in each item in the Purchase Order Generator Items table
