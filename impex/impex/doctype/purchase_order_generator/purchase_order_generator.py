@@ -212,9 +212,13 @@ class PurchaseOrderGenerator(Document):
 
     def set_required_purchase_qty(self, item):
         # set required purchase qty for each item
+        weeks = int(self.weeks_required or 0)
+        if weeks <= 0:
+            weeks = 0
+            
         item.purchase_qty = (
             (item.sales_orders_qty or 0)
-            + ((item.sales_average or 0) * int(self.months_required or 0))
+            + ((item.sales_average or 0) * weeks / 4)
             - (item.existing_qty or 0)
             - (item.open_purchase_qty or 0)
         )
@@ -542,7 +546,7 @@ def get_items_sales(company, from_date, to_date, item_group=None, items=None):
     for item in items_data:
         item["sales_average"] = round(
             item["sales_total"]
-            / ((converted_end_date - converted_start_date).days / 30),
+            / ((converted_end_date - converted_start_date).days / 7),
             2,
         )
 
