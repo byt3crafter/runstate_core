@@ -58,10 +58,12 @@ class PurchaseOrderGenerator(Document):
             else:
                 items[item.purchase_supplier].append([item])
         
-        # Get the default warehouse for the company
+        # Get the default warehouse for the company and price list
         warehouse = frappe.db.get_value("Impex Company Settings", {"company": self.company}, "default_warehouse")
         if not warehouse or warehouse == "":
             frappe.throw(f"Please set the default warehouse for {self.company} in Impex Settings")
+        if self.inter_company_purchase == 1:
+            price_list = frappe.db.get_single_value("Impex Settings", "main_company_price_list")
 
         for supplier in items:
             for items_list in items[supplier]:
@@ -70,7 +72,9 @@ class PurchaseOrderGenerator(Document):
                 supplier_price_list = frappe.get_cached_value(
                     "Supplier", supplier, "default_price_list"
                 )
-                if supplier_price_list:
+                if self.inter_company_purchase == 1:
+                    purchase_order.buying_price_list = price_list
+                elif supplier_price_list:
                     purchase_order.buying_price_list = supplier_price_list
                 purchase_order.company = self.company
                 purchase_order.posting_date = today_date
@@ -223,7 +227,15 @@ class PurchaseOrderGenerator(Document):
             - (item.open_purchase_qty or 0)
         )
         item.purchase_qty = int(item.purchase_qty)
-        item.purchase_rate = item.cheapest_purchase_rate or item.last_purchase_rate
+        
+        if self.inter_company_purchase == 1:
+            price_list = frappe.db.get_single_value("Impex Settings", "main_company_price_list")
+            if price_list and price_list != "":
+                item.purchase_rate = frappe.db.get_value("Item Price", 
+                                        {"price_list": price_list, "item_code": item.item_code}, "price_list_rate")
+        else:
+            item.purchase_rate = item.cheapest_purchase_rate or item.last_purchase_rate
+            
         item.purchase_supplier = (
             item.cheapest_purchase_supplier or item.last_purchase_supplier
         )

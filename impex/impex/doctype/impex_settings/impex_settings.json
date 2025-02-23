@@ -12,6 +12,7 @@
   "section_purichase_order_generator",
   "main_company",
   "main_company_warehouse",
+  "main_company_price_list",
   "default_company_settings"
  ],
  "fields": [
@@ -47,12 +48,18 @@
    "fieldtype": "Link",
    "label": "Main Company Default Sales Warehouse",
    "options": "Warehouse"
+  },
+  {
+   "fieldname": "main_company_price_list",
+   "fieldtype": "Link",
+   "label": "Main Company Sales Price List",
+   "options": "Price List"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-02-09 15:41:21.410171",
+ "modified": "2025-02-23 01:22:34.926349",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Impex Settings",
