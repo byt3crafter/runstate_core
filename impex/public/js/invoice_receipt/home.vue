@@ -8,8 +8,7 @@
 		  <button @click="loadInvoices" class="btn btn-primary" style="margin-left: 25px;">Load Invoices</button>
 		</div>
 	  </div>
-  
-	  <div class="row mt-4">
+	  <div class="row mt-4 initialy-hide">
 		<div class="col-md-6">
 		  <div class="frappe-card p-3">
 			<h2 class="h6 fw-bold mb-3">Invoices</h2>
@@ -49,11 +48,11 @@
 			</div>
 		  </div>
 		</div>
+
+		<button @click="confirmReceipt" class="btn btn-primary d-block mx-auto mt-4">
+			Confirm Items Receipt
+		</button>
 	  </div>
-  
-	  <button @click="confirmReceipt" class="btn btn-primary d-block mx-auto mt-4">
-		Confirm Items Receipt
-	  </button>
 	</div>
   </template>
   
@@ -100,6 +99,9 @@
 				if (response.message) {
 					this.invoices = response.message.invoices;
 					this.invoiceItems = response.message.items;
+					document.querySelectorAll('.initialy-hide').forEach(element => {
+						element.style.display = 'flex';
+					});
 				}
 			}
 		});
@@ -126,7 +128,8 @@
 			callback: function(res){
 				if(res.message){
 					frappe.msgprint("Invoices received: " + me.selectedInvoices.join(", "));
-				}
+					me.invoices = [];
+					me.items = [];
 			}
 		});
 	  }
@@ -146,6 +149,10 @@
 	border-top: none;
 	border-right: none;
 	border-left: none;
+  }
+
+  .initialy-hide {
+	display: none;
   }
   </style>
   
