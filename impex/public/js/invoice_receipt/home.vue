@@ -130,6 +130,7 @@
 					frappe.msgprint("Invoices received: " + me.selectedInvoices.join(", "));
 					me.invoices = [];
 					me.items = [];
+				}
 			}
 		});
 	  }
