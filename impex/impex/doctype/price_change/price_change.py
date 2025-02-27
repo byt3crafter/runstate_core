@@ -58,8 +58,14 @@ class PriceChange(Document):
         if not self._existing_prices:
             self.load_price_list_data()
 
-        # First pass - calculate base prices
+        # Initialize base_prices dictionary to store calculated prices
         base_prices = {}
+        # Track processed rules to avoid infinite loops
+        processed_rules = set()
+        # Track rules with dependencies for later processing
+        rules_with_dependencies = []
+
+        # First pass - calculate base prices (rules without dependencies)
         for rule in self.rule_prices:
             rule.last_rate = self.get_last_rate(rule.item_code, rule.price_list)
 
@@ -77,18 +83,42 @@ class PriceChange(Document):
                     base_rate * (1 + (rule.margin / 100)) if rule.margin else base_rate
                 )
                 base_prices[rule.price_list] = rule.new_rate
+                processed_rules.add(rule.price_list)
+            else:
+                # Add to rules with dependencies for later processing
+                rules_with_dependencies.append(rule)
 
-        # Second pass - calculate dependent prices
-        for rule in self.rule_prices:
-            if rule.base_price_list:
-                base_rate = base_prices.get(rule.base_price_list)
-                if not base_rate:
-                    frappe.throw(
-                        f"Base Price rate not found for Price List {rule.base_price_list}"
+        # Process rules with dependencies until all are processed or no progress is made
+        remaining_rules = rules_with_dependencies.copy()
+        while remaining_rules:
+            rules_processed_in_this_iteration = 0
+            still_remaining = []
+
+            for rule in remaining_rules:
+                if rule.base_price_list in processed_rules:
+                    # Base price list has been processed, we can calculate this rule
+                    base_rate = base_prices.get(rule.base_price_list)
+                    rule.new_rate = (
+                        base_rate * (1 + (rule.margin / 100))
+                        if rule.margin
+                        else base_rate
                     )
-                rule.new_rate = (
-                    base_rate * (1 + (rule.margin / 100)) if rule.margin else base_rate
+                    base_prices[rule.price_list] = rule.new_rate
+                    processed_rules.add(rule.price_list)
+                    rules_processed_in_this_iteration += 1
+                else:
+                    # Base price list not processed yet, keep for next iteration
+                    still_remaining.append(rule)
+
+            # If we didn't process any rules in this iteration, we have circular dependencies
+            if rules_processed_in_this_iteration == 0 and still_remaining:
+                # Find the first unprocessed rule to report in the error
+                unprocessed_rule = still_remaining[0]
+                frappe.throw(
+                    f"Could not resolve price list dependencies. Base Price List '{unprocessed_rule.base_price_list}' for '{unprocessed_rule.price_list}' could not be calculated. Check for circular dependencies."
                 )
+
+            remaining_rules = still_remaining
 
     def update_item_price_from_price_change(self):
         """Bulk update item prices"""
