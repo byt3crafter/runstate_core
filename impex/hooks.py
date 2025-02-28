@@ -287,9 +287,13 @@ fixtures = [
                     "Sales Invoice Item-custom_inter_company_purchase",
                     "Sales Invoice-custom_purchase_order_receipt",
                     "Sales Invoice-custom_column_break_fzrxb",
-					"Sales Invoice-custom_receipt_status",
-					"Sales Invoice-custom_receipt_date",
-					"Sales Invoice-custom_received_by"
+                    "Sales Invoice-custom_receipt_status",
+                    "Sales Invoice-custom_receipt_date",
+                    "Sales Invoice-custom_received_by",
+                    "Delivery Note Item-custom_inter_company_purchase",
+                    "Delivery Note Item-custom_branch_purchase_order",
+                    "Delivery Note Item-custom_column_break_u6ssy",
+                    "Delivery Note Item-custom_branch_purchase_order_item"
                 ],
             ]
         ],
