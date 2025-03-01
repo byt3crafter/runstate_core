@@ -13,7 +13,7 @@
   "inter_company_purchase",
   "column_break_cwyrt",
   "date",
-  "weeks_required",
+  "months_required",
   "filters_section",
   "from_date",
   "to_date",
@@ -99,6 +99,14 @@
    "label": "Load Items"
   },
   {
+   "default": "1",
+   "fieldname": "months_required",
+   "fieldtype": "Select",
+   "label": "Months Required",
+   "mandatory_depends_on": "eval: doc.type == \"Historical Sales\"",
+   "options": "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12"
+  },
+  {
    "fieldname": "amended_from",
    "fieldtype": "Link",
    "label": "Amended From",
@@ -118,20 +126,12 @@
    "fieldname": "inter_company_purchase",
    "fieldtype": "Check",
    "label": "Inter Company Purchase"
-  },
-  {
-   "default": "1",
-   "fieldname": "weeks_required",
-   "fieldtype": "Int",
-   "label": "Months Required",
-   "mandatory_depends_on": "eval: doc.type == \"Historical Sales\"",
-   "non_negative": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-02-14 12:55:58.788586",
+ "modified": "2024-05-08 22:35:57.290473",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Purchase Order Generator",
