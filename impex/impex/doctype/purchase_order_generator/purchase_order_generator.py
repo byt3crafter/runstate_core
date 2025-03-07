@@ -15,7 +15,7 @@ class PurchaseOrderGenerator(Document):
         self.validate_mandatory_fields()
         purchase_orders = self.create_purchase_orders()
         if len(purchase_orders) > 0 and self.inter_company_purchase:
-            self.create_sales_order(purchase_orders)
+            create_sales_order(purchase_orders)
 
     def validate_mandatory_fields(self):
         if not self.items:
@@ -239,32 +239,6 @@ class PurchaseOrderGenerator(Document):
         item.purchase_currency = (
             item.cheapest_purchase_currency or item.last_purchase_currency
         )
-        
-    def create_sales_order(self, purchase_orders):
-        for purchase_order in purchase_orders:
-            po = frappe.get_doc("Purchase Order", purchase_order)
-            customer = frappe.db.get_value("Impex Company Settings", {"company": self.company}, "company_customer")
-            company = frappe.db.get_single_value("Impex Settings", "main_company")
-            warehouse = frappe.db.get_single_value("Impex Settings", "main_company_warehouse")
-            so = frappe.new_doc("Sales Order")
-            so.update({
-                "company": company,
-                "customer": customer
-            })
-            
-            for item in po.items:
-                so.append("items", {
-                    "item_code": item.item_code,
-                    "delivery_date": item.schedule_date,
-                    "qty": item.qty,
-                    "uom": item.uom,
-                    "rate": item.rate,
-                    "custom_branch_purchase_order": po.name,
-                    "custom_branch_purchase_order_item": item.name,
-                    "warehouse": warehouse
-                })
-            so.save(ignore_permissions=True)
-
 
 def get_items_from_sales_orders(
     company, from_date, to_date, item_group=None, items=None
@@ -570,7 +544,31 @@ def get_items_sales(company, from_date, to_date, item_group=None, items=None):
     else:
         return items_data
 
-def test():
-    pog = frappe.get_doc("Purchase Order Generator", "POG-25-0000004")
-    pos = ["PUR-ORD-2025-00010"]
-    pog.create_sales_order(pos)
+def create_sales_order(purchase_orders):
+    for purchase_order in purchase_orders:
+        po = frappe.get_doc("Purchase Order", purchase_order)
+        customer = frappe.db.get_value("Impex Company Settings", {"company": po.company}, "company_customer")
+        company = frappe.db.get_single_value("Impex Settings", "main_company")
+        warehouse = frappe.db.get_single_value("Impex Settings", "main_company_warehouse")
+        price_list = frappe.db.get_single_value("Impex Settings", "main_company_price_list")
+        so = frappe.new_doc("Sales Order")
+        so.update({
+            "company": company,
+            "customer": customer
+        })
+        
+        if price_list and price_list != "":
+            so.update({"selling_price_list": price_list})
+        
+        for item in po.items:
+            so.append("items", {
+                "item_code": item.item_code,
+                "delivery_date": item.schedule_date,
+                "qty": item.qty,
+                "uom": item.uom,
+                "rate": item.rate,
+                "custom_branch_purchase_order": po.name,
+                "custom_branch_purchase_order_item": item.name,
+                "warehouse": warehouse
+            })
+        so.save(ignore_permissions=True)

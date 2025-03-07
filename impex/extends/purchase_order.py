@@ -1,14 +1,25 @@
 import frappe
 from frappe import _
+from impex.impex.doctype.purchase_order_generator.purchase_order_generator import create_sales_order
 
 
 def validate(doc, method):
     set_part_number(doc)
+    if doc.custom_create_sales_order:
+        validate_inter_company(doc)
+    
+def validate_inter_company(doc):
+    # Validate that the company has an assciated customer for inter-company purchases
+    company_customer = frappe.db.get_value("Impex Company Settings", {"company": doc.company}, "company_customer")
+    if not company_customer or company_customer is None or company_customer == "":
+        frappe.throw(_(f"""Please setup a customer for the {doc.company} company in Impex Settings
+                       to create inter-company Sales Order"""))
 
 
 def on_submit(doc, method):
     add_part_number(doc)
-
+    if doc.custom_create_sales_order:
+    	create_sales_order([doc.name])
 
 def set_part_number(doc):
     if not doc.supplier:
