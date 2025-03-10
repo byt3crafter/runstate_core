@@ -11,6 +11,7 @@
   "company",
   "amended_from",
   "inter_company_purchase",
+  "orders_in_draft",
   "column_break_cwyrt",
   "date",
   "months_required",
@@ -126,12 +127,18 @@
    "fieldname": "inter_company_purchase",
    "fieldtype": "Check",
    "label": "Inter Company Purchase"
+  },
+  {
+   "default": "0",
+   "fieldname": "orders_in_draft",
+   "fieldtype": "Check",
+   "label": "Create Purchase Orders in Draft"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-05-08 22:35:57.290473",
+ "modified": "2025-03-10 17:18:28.728597",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Purchase Order Generator",
