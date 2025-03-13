@@ -2,6 +2,8 @@ import frappe
 from frappe.utils import flt
 from frappe.model.document import Document
 
+Default_Price_Change_Threshold = 2
+
 
 class PriceChange(Document):
     def __init__(self, *args, **kwargs):
@@ -467,6 +469,14 @@ def create_price_change_from_purchase_invoice(
         # Calculate prices to check for changes
         price_change_doc.calc_price_change()
 
+        price_change_threshold = Default_Price_Change_Threshold
+        try:
+            price_change_threshold = frappe.db.get_single_value(
+                "Price Change Settings", "price_change_threshold"
+            )
+        except Exception:
+            price_change_threshold = Default_Price_Change_Threshold
+
         # Check if any prices actually changed
         changed_prices = []
         for rule in price_change_doc.rule_prices:
@@ -484,7 +494,8 @@ def create_price_change_from_purchase_invoice(
                     changed_prices.append(rule)
                 # update if no last rate or rate change is greater than 2
                 elif item_row and (
-                    not item_row.last_rate or abs(item_row.rate_change) > 2
+                    not item_row.last_rate
+                    or abs(item_row.rate_change) > price_change_threshold
                 ):
                     changed_prices.append(rule)
 
