@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:ILBL-{#####}",
+ "autoname": "format:ILBL{#####}",
  "creation": "2025-03-12 20:38:22.600645",
  "default_view": "List",
  "doctype": "DocType",
@@ -34,7 +34,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-12 23:40:00.147512",
+ "modified": "2025-03-13 11:28:16.910186",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Item Label Print",
