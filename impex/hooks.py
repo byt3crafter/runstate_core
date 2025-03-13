@@ -114,7 +114,7 @@ doctype_js = {
 # Override standard doctype classes
 
 # override_doctype_class = {
-# 	"ToDo": "custom_app.overrides.CustomToDo"
+#     "Sales Invoice": "impex.extends.sales_invoice.CustomSalesInvoice"
 # }
 
 # Document Events
@@ -144,6 +144,10 @@ doc_events = {
     "Purchase Receipt": {
         "on_submit": "impex.extends.purchase_receipt.on_submit",
     },
+    "Sales Invoice": {
+		"autoname": "impex.extends.sales_invoice.autoname",
+		"on_submit": "impex.extends.sales_invoice.on_submit"
+	}
 }
 
 # Scheduled Tasks
