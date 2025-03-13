@@ -35,31 +35,35 @@
    "fieldname": "main_company",
    "fieldtype": "Link",
    "label": "Main Company (for inter-company purchases)",
-   "options": "Company"
+   "options": "Company",
+   "permlevel": 1
   },
   {
    "fieldname": "default_company_settings",
    "fieldtype": "Table",
    "label": "Default Company Settings",
-   "options": "Impex Company Settings"
+   "options": "Impex Company Settings",
+   "permlevel": 1
   },
   {
    "fieldname": "main_company_warehouse",
    "fieldtype": "Link",
    "label": "Main Company Default Sales Warehouse",
-   "options": "Warehouse"
+   "options": "Warehouse",
+   "permlevel": 1
   },
   {
    "fieldname": "main_company_price_list",
    "fieldtype": "Link",
    "label": "Main Company Sales Price List",
-   "options": "Price List"
+   "options": "Price List",
+   "permlevel": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-02-23 01:22:34.926349",
+ "modified": "2025-03-13 16:02:37.667464",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Impex Settings",
