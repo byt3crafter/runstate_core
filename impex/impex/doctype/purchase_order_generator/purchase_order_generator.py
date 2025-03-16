@@ -574,3 +574,7 @@ def create_sales_order(purchase_orders):
                 "warehouse": warehouse
             })
         so.save(ignore_permissions=True)
+        
+@frappe.whitelist()
+def get_po_in_draft(company):
+    return frappe.db.get_value("Impex Company Settings", {"company": company}, "po_in_draft")
