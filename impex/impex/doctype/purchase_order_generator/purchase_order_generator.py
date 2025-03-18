@@ -573,7 +573,7 @@ def create_sales_order(purchase_orders):
                 "custom_branch_purchase_order_item": item.name,
                 "warehouse": warehouse
             })
-        so.save(ignore_permissions=True)
+        so.submit()
         
 @frappe.whitelist()
 def get_po_in_draft(company):
