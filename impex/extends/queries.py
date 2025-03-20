@@ -1,147 +1,129 @@
 import frappe
 import json
-from frappe import scrub
+from frappe import scrub, _
 from frappe.utils import nowdate
-from itertools import permutations
 from frappe.desk.reportview import get_filters_cond, get_match_cond
-
-
-def generate_word_combinations(input_string=None):
-    if not input_string:
-        return
-    words = input_string.split(" ")
-    word_count = len(words)
-    combinations = []
-
-    # Generate all possible permutations of the words
-    for perm in permutations(words):
-        if len(perm) == word_count:
-            combinations.append(" ".join(perm))
-
-    return combinations
-
 
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
 def item_query(doctype, txt, searchfield, start, page_len, filters, as_dict=False):
-    doctype = "Item"
-    conditions = []
+	doctype = "Item"
+	conditions = []
 
-    if isinstance(filters, str):
-        filters = json.loads(filters)
+	if isinstance(filters, str):
+		filters = json.loads(filters)
 
-    # Get searchfields from meta and use in Item Link field query
-    meta = frappe.get_meta(doctype, cached=True)
-    searchfields = meta.get_search_fields()
+	# Get searchfields from meta and use in Item Link field query
+	meta = frappe.get_meta(doctype, cached=True)
+	searchfields = meta.get_search_fields()
 
-    columns = ""
-    extra_searchfields = [
-        field for field in searchfields if not field in ["name", "description"]
-    ]
+	columns = ""
+	extra_searchfields = [field for field in searchfields if field not in ["name", "description"]]
 
-    if extra_searchfields:
-        columns += ", " + ", ".join(extra_searchfields)
+	if extra_searchfields:
+		columns += ", " + ", ".join(extra_searchfields)
 
-    if "description" in searchfields:
-        columns += """, if(length(tabItem.description) > 40, \
-            concat(substr(tabItem.description, 1, 40), "..."), description) as description"""
+	if "description" in searchfields:
+		columns += """, if(length(tabItem.description) > 40, \
+			concat(substr(tabItem.description, 1, 40), "..."), description) as description"""
 
-    searchfields = searchfields + [
-        field
-        for field in [searchfield or "name", "item_code", "item_group", "item_name"]
-        if not field in searchfields
-    ]
-    # searchfields_value = " or ".join([field + " like %(txt)s" for field in searchfields])
+	searchfields = searchfields + [
+		field
+		for field in [searchfield or "name", "item_code", "item_group", "item_name"]
+		if field not in searchfields
+	]
 
-    txt_combinations = generate_word_combinations(txt)
-    searchfields_value = ""
-    if txt_combinations:
-        combination_conditions = []
-        for combination in txt_combinations:
-            if combination:
-                combination_conditions.append(
-                    "("
-                    + " OR ".join(
-                        [
-                            "tabItem.{0} LIKE '%%{1}%%'".format(
-                                field, combination.replace(" ", "%%")
-                            )
-                            for field in searchfields
-                        ]
-                    )
-                    + ")"
-                )
-        searchfields_value = " OR ".join(combination_conditions)
-    else:
-        searchfields_value = " OR ".join(
-            [field + " like %(txt)s" for field in searchfields]
-        )
+	# Customization: Break down the sentence into words and search for each word
+	# but only if the search text is less than five words
+	wordparams = {}
+	if len(txt.split()) < 5 and len(txt.split()) > 1:
+		words = txt.split()
+		oldsearch = searchfields
+		searchfields = ""
+		for i in range(len(words)):
+			searchfields += ") and (" if i > 0 else "("
+			searchfields += " or ".join([field + " like %(word" + str(i) + ")s" for field in oldsearch])
+			wordparams[f"word{i}"] = f"%{words[i]}%"
+		searchfields += ")"
+	else:
+		searchfields = " or ".join([field + " like %(txt)s" for field in searchfields])
 
-    # frappe.msgprint(searchfields_value)
+	if filters and isinstance(filters, dict):
+		if filters.get("customer") or filters.get("supplier"):
+			party = filters.get("customer") or filters.get("supplier")
+			item_rules_list = frappe.get_all(
+				"Party Specific Item",
+				filters={"party": party},
+				fields=["restrict_based_on", "based_on_value"],
+			)
 
-    if filters and isinstance(filters, dict):
-        if filters.get("customer") or filters.get("supplier"):
-            party = filters.get("customer") or filters.get("supplier")
-            item_rules_list = frappe.get_all(
-                "Party Specific Item",
-                filters={"party": party},
-                fields=["restrict_based_on", "based_on_value"],
-            )
+			filters_dict = {}
+			for rule in item_rules_list:
+				if rule["restrict_based_on"] == "Item":
+					rule["restrict_based_on"] = "name"
+				filters_dict[rule.restrict_based_on] = []
 
-            filters_dict = {}
-            for rule in item_rules_list:
-                if rule["restrict_based_on"] == "Item":
-                    rule["restrict_based_on"] = "name"
-                filters_dict[rule.restrict_based_on] = []
+			for rule in item_rules_list:
+				filters_dict[rule.restrict_based_on].append(rule.based_on_value)
 
-            for rule in item_rules_list:
-                filters_dict[rule.restrict_based_on].append(rule.based_on_value)
+			for filter in filters_dict:
+				filters[scrub(filter)] = ["in", filters_dict[filter]]
 
-            for filter in filters_dict:
-                filters[scrub(filter)] = ["in", filters_dict[filter]]
+			if filters.get("customer"):
+				del filters["customer"]
+			else:
+				del filters["supplier"]
+		else:
+			filters.pop("customer", None)
+			filters.pop("supplier", None)
 
-            if filters.get("customer"):
-                del filters["customer"]
-            else:
-                del filters["supplier"]
-        else:
-            filters.pop("customer", None)
-            filters.pop("supplier", None)
+	description_cond = ""
+	if frappe.db.count(doctype, cache=True) < 50000:
+		# scan description only if items are less than 50000
+		description_cond = "or tabItem.description LIKE %(txt)s"
 
-    description_cond = ""
-    if frappe.db.count(doctype, cache=True) < 50000:
-        # scan description only if items are less than 50000
-        description_cond = "or tabItem.description LIKE %(txt)s"
+	# Customization: Add the individual word parameters to the default paramaters
+	allparams = {
+			"today": nowdate(),
+			"txt": "%%%s%%" % txt,
+			"_txt": txt.replace("%", ""),
+			"start": start,
+			"page_len": page_len,
+		}
+	allparams.update(wordparams)
 
-    return frappe.db.sql(
-        """select
-            tabItem.name {columns}
-        from tabItem
-        where tabItem.docstatus < 2
-            and tabItem.disabled=0
-            and tabItem.has_variants=0
-            and (tabItem.end_of_life > %(today)s or ifnull(tabItem.end_of_life, '0000-00-00')='0000-00-00')
-            and ({scond} or tabItem.item_code IN (select parent from `tabItem Barcode` where barcode LIKE %(txt)s)
-                {description_cond})
-            {fcond} {mcond}
-        order by
-            if(locate(%(_txt)s, name), locate(%(_txt)s, name), 99999),
-            if(locate(%(_txt)s, item_name), locate(%(_txt)s, item_name), 99999),
-            idx desc,
-            name, item_name
-        limit %(start)s, %(page_len)s """.format(
-            columns=columns,
-            scond=searchfields_value,
-            fcond=get_filters_cond(doctype, filters, conditions).replace("%", "%%"),
-            mcond=get_match_cond(doctype).replace("%", "%%"),
-            description_cond=description_cond,
-        ),
-        {
-            "today": nowdate(),
-            "txt": "%%%s%%" % txt,
-            "_txt": txt.replace("%", ""),
-            "start": start,
-            "page_len": page_len,
-        },
-        as_dict=as_dict,
-    )
+	if filters.get("is_advance", False):
+		desc_limit = 140
+	else:
+		desc_limit = 40
+	filters.pop("is_advance", None)
+
+	return frappe.db.sql(
+		"""select
+			tabItem.name, 
+			if(length(tabItem.description) > {desc_limit}, 
+			concat(substr(tabItem.description, 1, {desc_limit}), "..."), description) as description
+		from tabItem
+		where tabItem.docstatus < 2
+			and tabItem.disabled=0
+			and tabItem.has_variants=0
+			and (tabItem.end_of_life > %(today)s or ifnull(tabItem.end_of_life, '0000-00-00')='0000-00-00')
+			and ({scond} or tabItem.item_code IN (select parent from `tabItem Barcode` where barcode LIKE %(txt)s)
+				{description_cond})
+			{fcond} {mcond}
+		order by
+			if(locate(%(_txt)s, name), locate(%(_txt)s, name), 99999),
+			if(locate(%(_txt)s, item_name), locate(%(_txt)s, item_name), 99999),
+			idx desc,
+			name, item_name
+		limit %(start)s, %(page_len)s """.format(
+			columns=columns,
+			scond=searchfields,
+			fcond=get_filters_cond(doctype, filters, conditions).replace("%", "%%"),
+			mcond=get_match_cond(doctype).replace("%", "%%"),
+			description_cond=description_cond,
+			desc_limit=desc_limit,
+		),
+		allparams,
+		as_dict=as_dict,
+	)
