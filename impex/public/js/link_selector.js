@@ -1,0 +1,26 @@
+frappe.link_search = function (doctype, args, callback, btn) {
+	if (!args) {
+		args = {
+			txt: "",
+		};
+	}
+	args.doctype = doctype;
+	if (!args.searchfield) {
+		args.searchfield = "name";
+	}
+
+	// Customization: Change the item search query to our custom one
+	if (args.query && args.query == "erpnext.controllers.queries.item_query") {
+		args.query = "impex.extends.queries.item_query";
+		args.filters.is_advance = true;
+	}
+	frappe.call({
+		method: "frappe.desk.search.search_widget",
+		type: "POST",
+		args: args,
+		callback: function (r) {
+			callback && callback(r);
+		},
+		btn: btn,
+	});
+};
