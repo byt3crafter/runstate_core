@@ -113,18 +113,18 @@ doctype_js = {
 # ---------------
 # Override standard doctype classes
 
-# override_doctype_class = {
-#     "Sales Invoice": "impex.extends.sales_invoice.CustomSalesInvoice"
-# }
+override_doctype_class = {
+    "Sales Order": "impex.extends.sales_order.CustomSalesOrder"
+}
 
 # Document Events
 # ---------------
 # Hook on document methods and events
 
 doc_events = {
-    "Sales Order": {
-        "validate": "impex.extends.sales_order.validate",
-    },
+    # "Sales Order": {
+    #     "validate": "impex.extends.sales_order.validate",
+    # },
     "Supplier Quotation": {
         "on_submit": "impex.extends.supplier_quotation.on_submit",
     },

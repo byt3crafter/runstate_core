@@ -2,10 +2,76 @@ import frappe
 from impex.extends.mapper import get_mapped_doc
 from frappe.utils import flt
 from erpnext.stock.get_item_details import get_price_list_rate_for
+from erpnext.selling.doctype.sales_order.sales_order import SalesOrder
+from erpnext.controllers.selling_controller import SellingController, set_default_income_account_for_item
+from erpnext.controllers.stock_controller import StockController
+from erpnext.manufacturing.doctype.blanket_order.blanket_order import (
+	validate_against_blanket_order,
+)
+from erpnext.accounts.doctype.sales_invoice.sales_invoice import (
+	validate_inter_company_party,
+)
 
+class CustomStockController(StockController):
+    def validate(self):
+        super(CustomStockController, self).validate()
 
-def validate(doc, method=None):
-    prompt_same_items(doc)
+class CustomSellingController(CustomStockController, SellingController):
+    def validate(self):
+        CustomStockController.validate(self)
+        self.validate_items()
+        if not (self.get("is_debit_note") or self.get("is_return")):
+            self.validate_max_discount()
+        if not frappe.db.exists("Impex Company Settings", {"company": self.company, "disable_selling_prive_validation": 1}):
+            self.validate_selling_price()
+        self.set_qty_as_per_stock_uom()
+        self.set_po_nos(for_validate=True)
+        self.set_gross_profit()
+        set_default_income_account_for_item(self)
+        self.set_customer_address()
+        self.validate_for_duplicate_items()
+        self.validate_target_warehouse()
+        self.validate_auto_repeat_subscription_dates()
+
+class CustomSalesOrder(CustomSellingController, SalesOrder):
+    def validate(self):
+        CustomSellingController.validate(self)
+        self.validate_delivery_date()
+        self.validate_proj_cust()
+        self.validate_po()
+        self.validate_uom_is_integer("stock_uom", "stock_qty")
+        self.validate_uom_is_integer("uom", "qty")
+        self.validate_for_items()
+        self.validate_warehouse()
+        self.validate_drop_ship()
+        self.validate_serial_no_based_delivery()
+        validate_against_blanket_order(self)
+        validate_inter_company_party(
+            self.doctype, self.customer, self.company, self.inter_company_order_reference
+        )
+
+        if self.coupon_code:
+            from erpnext.accounts.doctype.pricing_rule.utils import validate_coupon_code
+
+            validate_coupon_code(self.coupon_code)
+
+        from erpnext.stock.doctype.packed_item.packed_item import make_packing_list
+
+        make_packing_list(self)
+
+        self.validate_with_previous_doc()
+        self.set_status()
+
+        if not self.billing_status:
+            self.billing_status = "Not Billed"
+        if not self.delivery_status:
+            self.delivery_status = "Not Delivered"
+
+        self.reset_default_field_value("set_warehouse", "items", "warehouse")
+        prompt_same_items(self)
+
+# def validate(doc, method=None):
+#     prompt_same_items(doc)
 
 
 def prompt_same_items(doc):
