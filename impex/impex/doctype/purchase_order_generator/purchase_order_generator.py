@@ -14,7 +14,8 @@ class PurchaseOrderGenerator(Document):
     def on_submit(self):
         self.validate_mandatory_fields()
         purchase_orders = self.create_purchase_orders()
-        if len(purchase_orders) > 0 and self.inter_company_purchase:
+        create_so = frappe.db.get_single_value("Impex Settings", "create_sales_order")
+        if create_so and len(purchase_orders) > 0 and self.inter_company_purchase:
             create_sales_order(purchase_orders)
 
     def validate_mandatory_fields(self):
