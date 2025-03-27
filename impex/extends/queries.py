@@ -92,11 +92,11 @@ def item_query(doctype, txt, searchfield, start, page_len, filters, as_dict=Fals
 		}
 	allparams.update(wordparams)
 
-	if filters.get("is_advance", False):
+	if filters and filters.get("is_advance", False):
 		desc_limit = 140
+		filters.pop("is_advance", None)
 	else:
 		desc_limit = 40
-	filters.pop("is_advance", None)
 
 	return frappe.db.sql(
 		"""select

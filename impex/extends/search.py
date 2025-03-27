@@ -39,6 +39,7 @@ def search_link(
     # replace the query with the custom one
     if query == "erpnext.controllers.queries.item_query":
         query = "impex.extends.queries.item_query"
+        filters["is_advance"] = True
 
     search_widget(
         doctype,
