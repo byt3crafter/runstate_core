@@ -349,6 +349,11 @@ def create_price_change_from_purchase_invoice(
 
     if doc.get("is_return"):
         return
+    
+	# If it's not the main company return
+    main_company = frappe.db.get_single_value("Impex Settings", "main_company")
+    if doc.company != main_company:
+        return
 
     # Prepare data
     items_data = {}  # Cache for item data
