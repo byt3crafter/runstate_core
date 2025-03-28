@@ -19,6 +19,23 @@ frappe.ui.form.on("Impex Settings", {
 			}
 		}
 	});
+
+	frm.set_query("tax_template", "default_company_settings", function(doc, cdt, cdn) {
+		var row = locals[cdt][cdn];
+		return {
+			filters: {
+				'company': row.company
+			}
+		};
+	});
+
+	frm.set_query("tax_template",  function(){
+		return {
+			filters: {
+				"company": frm.doc.main_company
+			}
+		}
+	});
   },
 
   create_pick_list: function (frm) {
@@ -29,6 +46,7 @@ frappe.ui.form.on("Impex Settings", {
       },
     });
   },
+
   update_sales_orders_prices: function (frm) {
     frappe.call({
       method: "impex.extends.sales_order.background_update_sales_orders_prices",
