@@ -10,9 +10,13 @@
   "create_pick_list",
   "update_sales_orders_prices",
   "section_purichase_order_generator",
+  "create_sales_order",
   "main_company",
   "main_company_warehouse",
+  "column_break_ahtvy",
   "main_company_price_list",
+  "tax_template",
+  "default_settings_section",
   "default_company_settings"
  ],
  "fields": [
@@ -29,7 +33,7 @@
   {
    "fieldname": "section_purichase_order_generator",
    "fieldtype": "Section Break",
-   "label": "Purochase Order Generator Settings"
+   "label": "Purchase Order Generator Settings"
   },
   {
    "fieldname": "main_company",
@@ -58,12 +62,32 @@
    "label": "Main Company Sales Price List",
    "options": "Price List",
    "permlevel": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "create_sales_order",
+   "fieldtype": "Check",
+   "label": "Create Sales Order On Submit"
+  },
+  {
+   "fieldname": "column_break_ahtvy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "tax_template",
+   "fieldtype": "Link",
+   "label": "Purchase Taxes and Charges Template",
+   "options": "Purchase Taxes and Charges Template"
+  },
+  {
+   "fieldname": "default_settings_section",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-03-13 16:02:37.667464",
+ "modified": "2025-03-28 18:53:43.908973",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Impex Settings",

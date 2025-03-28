@@ -103,6 +103,35 @@ class PurchaseOrderGenerator(Document):
                             "warehouse": warehouse
                         },
                     )
+                    
+                if self.company == frappe.db.get_single_value("Impex Settings", "main_company"):
+                    tax_template = frappe.db.get_single_value("Impex Settings", "tax_template")
+                else:
+                    tax_template = frappe.db.get_value("Impex Company Settings", {"company": self.company}, "tax_template")
+                    
+                if tax_template:
+                    purchase_order.taxes_and_charges = tax_template
+                    taxes = frappe.get_all(
+                        "Purchase Taxes and Charges",
+                        filters={"parent": tax_template},
+                        fields=["*"],
+                        order_by="idx",
+                    )
+                    for tax in taxes:
+                        purchase_order.append(
+                            "taxes",
+                            {
+                                "charge_type": tax.charge_type,
+                                "account_head": tax.account_head,
+                                "description": tax.description,
+                                "rate": tax.rate,
+                                "tax_amount": tax.tax_amount,
+                                "cost_center": tax.cost_center,
+                                "included_in_print_rate": tax.included_in_print_rate,
+                                "included_in_paid_amount": tax.included_in_paid_amount,
+                            },
+                        )
+                
                 if self.orders_in_draft:
                     purchase_order.save(ignore_permissions=True)
                 else:

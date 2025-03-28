@@ -10,6 +10,7 @@
   "company",
   "default_warehouse",
   "company_customer",
+  "tax_template",
   "po_in_draft",
   "disable_selling_prive_validation"
  ],
@@ -39,6 +40,7 @@
    "reqd": 1
   },
   {
+   "columns": 1,
    "default": "0",
    "fieldname": "po_in_draft",
    "fieldtype": "Check",
@@ -46,17 +48,25 @@
    "label": "Create PO in Draft in Purchase Order Generator"
   },
   {
+   "columns": 1,
    "default": "0",
    "fieldname": "disable_selling_prive_validation",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Disable Selling Price Validation"
+  },
+  {
+   "fieldname": "tax_template",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Purchase Taxes and Charges Template",
+   "options": "Purchase Taxes and Charges Template"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-03-26 00:12:58.658522",
+ "modified": "2025-03-28 19:41:20.928989",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Impex Company Settings",
