@@ -20,7 +20,7 @@ class ItemPriceRuleImportTool(Document):
 					about the error on this document and revert to the Draft stage"
 				)
 			)
-			queue_action(self, "submit", timeout=2000)
+			queue_action(self, "submit", queue="long", timeout=7200)
 		else:
 			super().save()
 
