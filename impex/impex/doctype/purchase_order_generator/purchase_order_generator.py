@@ -5,6 +5,7 @@ import frappe
 from frappe.model.document import Document
 from erpnext.setup.doctype.item_group.item_group import get_child_item_groups
 from frappe.utils import getdate
+from frappe.utils import now_datetime
 
 
 class PurchaseOrderGenerator(Document):
@@ -586,7 +587,8 @@ def create_sales_order(purchase_orders):
         so = frappe.new_doc("Sales Order")
         so.update({
             "company": company,
-            "customer": customer
+            "customer": customer,
+            "transaction_date": now_datetime()
         })
         
         if price_list and price_list != "":
@@ -603,6 +605,31 @@ def create_sales_order(purchase_orders):
                 "custom_branch_purchase_order_item": item.name,
                 "warehouse": warehouse
             })
+            
+        sales_tax_template = frappe.db.get_single_value("Impex Settings", "sales_tax_template")
+                    
+        if sales_tax_template:
+            so.taxes_and_charges = sales_tax_template
+            taxes = frappe.get_all(
+                        "Sales Taxes and Charges",
+                        filters={"parent": sales_tax_template},
+                        fields=["*"],
+                        order_by="idx",
+                    )
+            for tax in taxes:
+                so.append(
+                    "taxes",
+                    {
+                        "charge_type": tax.charge_type,
+                        "account_head": tax.account_head,
+                        "description": tax.description,
+                        "rate": tax.rate,
+                        "tax_amount": tax.tax_amount,
+                        "cost_center": tax.cost_center,
+                        "included_in_print_rate": tax.included_in_print_rate,
+                        "included_in_paid_amount": tax.included_in_paid_amount,
+                    },
+                )
         so.submit()
         
 @frappe.whitelist()

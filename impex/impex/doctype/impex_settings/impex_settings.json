@@ -13,6 +13,7 @@
   "create_sales_order",
   "main_company",
   "main_company_warehouse",
+  "sales_tax_template",
   "column_break_ahtvy",
   "main_company_price_list",
   "tax_template",
@@ -82,12 +83,19 @@
   {
    "fieldname": "default_settings_section",
    "fieldtype": "Section Break"
+  },
+  {
+   "description": "For the automatically created Inter-Company Sales Order",
+   "fieldname": "sales_tax_template",
+   "fieldtype": "Link",
+   "label": "Sales Taxes and Charges Template",
+   "options": "Sales Taxes and Charges Template"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-03-28 18:53:43.908973",
+ "modified": "2025-04-03 23:45:52.187596",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Impex Settings",

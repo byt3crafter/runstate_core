@@ -36,6 +36,14 @@ frappe.ui.form.on("Impex Settings", {
 			}
 		}
 	});
+
+	frm.set_query("sales_tax_template",  function(){
+		return {
+			filters: {
+				"company": frm.doc.main_company
+			}
+		}
+	});
   },
 
   create_pick_list: function (frm) {

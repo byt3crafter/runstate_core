@@ -1,6 +1,7 @@
 import frappe
 from frappe.utils import now_datetime
 import json
+from erpnext.buying.doctype.purchase_order.purchase_order import make_purchase_receipt
 
 @frappe.whitelist()
 def get_invoices(company):
@@ -55,8 +56,6 @@ def confirm_receipt(invoices):
 
 		purchase_orders = {}
 		delivery_note_items = get_delivery_note_items(doc)
-		frappe.log_error(title="Test", message=str(delivery_note_items))
-
 
 		for row in doc.items:
 			if row.custom_branch_purchase_order and row.custom_branch_purchase_order not in purchase_orders:
@@ -66,16 +65,12 @@ def confirm_receipt(invoices):
 			)
 
 		for po, items in purchase_orders.items():
+			receipt_doc = make_purchase_receipt(po)
 			purchase_order = frappe.get_doc("Purchase Order", po)
 			first_key = next(iter(delivery_note_items))
-			receipt_doc = frappe.get_doc({
-					"doctype": "Purchase Receipt",
-					"company": purchase_order.company,
-					"supplier": purchase_order.supplier,
-					"posting_date": current_datetime,
-					"inter_company_reference": delivery_note_items[first_key]['parent']
-				})
+			receipt_doc.update({"inter_company_reference": delivery_note_items[first_key]['parent']})
 
+			receipt_doc.items = []
 			for item_code, po_item, qty, name in items:
 				receipt_doc.append("items", {
 					"item_code": item_code,
