@@ -43,6 +43,7 @@ class ItemPriceRuleImportTool(Document):
 			end = start + limit
 			self._add_item_price_rule(data[start:end])
 			start = end
+		frappe.db.commit()
 
 	def _add_item_price_rule(self, data):
 		for row in data:
