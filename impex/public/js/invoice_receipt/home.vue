@@ -15,8 +15,9 @@
 			<div
 			  v-for="invoice in invoices"
 			  :key="invoice.id"
-			  class="list-group-item list-group-item-action d-flex align-items-center"
+			  class="d-flex align-items-center"
 			  @click="selectInvoice(invoice.name)"
+			  style="margin-left: 20px;"
 			>
 			  <input
 				type="checkbox"
@@ -24,7 +25,7 @@
 				@change="updateSelectedInvoices(invoice.name)"
 				class="form-check-input me-2"
 			  />
-			  <div>
+			  <div style="margin-left: 10px;">
 				<p class="fw-bold mb-0">{{ invoice.name }}</p>
 				<p class="text-muted small">{{ invoice.date }}</p>
 			  </div>
@@ -38,7 +39,7 @@
 			<div
 			  v-for="item in items"
 			  :key="item.code"
-			  class="list-group-item d-flex justify-content-between"
+			  class="d-flex justify-content-between"
 			>
 			  <div>
 				<p class="fw-bold mb-0">{{ item.item_code }}</p>
@@ -139,12 +140,12 @@
   </script>
   
   <style>
-  .frappe-card {
+  /* .frappe-card {
 	background: #fff;
 	border: 1px solid #d1d8dd;
 	border-radius: 4px;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
+  } */
 
   .list-group-item {
 	border-top: none;
