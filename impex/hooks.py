@@ -298,7 +298,8 @@ fixtures = [
                     "Delivery Note Item-custom_branch_purchase_order",
                     "Delivery Note Item-custom_column_break_u6ssy",
                     "Delivery Note Item-custom_branch_purchase_order_item",
-                    "Purchase Order-custom_create_sales_order"
+                    "Purchase Order-custom_create_sales_order",
+                    "Item Supplier-custom_preffered_supplier"
                 ],
             ]
         ],
