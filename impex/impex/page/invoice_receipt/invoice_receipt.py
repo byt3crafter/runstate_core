@@ -50,8 +50,10 @@ def confirm_receipt(invoices):
 		invoices = json.loads(invoices)
 	current_user = frappe.session.user
 	current_datetime = now_datetime()
+	successful_invoices = []
 
 	for invoice in invoices:
+		all_pos_received = True
 		doc = frappe.get_doc("Sales Invoice", invoice)
 
 		purchase_orders = {}
@@ -81,15 +83,24 @@ def confirm_receipt(invoices):
 					"from_warehouse": doc.items[0].warehouse,
 					"warehouse": purchase_order.items[0].warehouse
 				})
-			receipt_doc.insert()
-			receipt_doc.submit()
-
-		frappe.db.set_value("Sales Invoice", invoice, "custom_receipt_status", "Received")
-		frappe.db.set_value("Sales Invoice", invoice, "custom_received_by", current_user)
-		frappe.db.set_value("Sales Invoice", invoice, "custom_receipt_date", current_datetime)
-
-	frappe.db.commit()
-	return "OK"
+			
+			try:
+				#receipt_doc.insert()
+				receipt_doc.submit()
+			except Exception as e:
+				all_pos_received = False
+				frappe.log_error(message=str(e), title="Error in Purchase Receipt Creation")
+				frappe.msgprint(f"An error occurred while creating the Purchase Receipt for Invoice {invoice}. {e}")
+				break
+		if all_pos_received:
+			frappe.db.set_value("Sales Invoice", invoice, "custom_receipt_status", "Received")
+			frappe.db.set_value("Sales Invoice", invoice, "custom_received_by", current_user)
+			frappe.db.set_value("Sales Invoice", invoice, "custom_receipt_date", current_datetime)
+			frappe.db.commit()
+			successful_invoices.append(invoice)
+		else:
+			frappe.db.rollback()
+	return successful_invoices
 
 def get_delivery_note_items(invoice):
 	delivery_note_items = {}
