@@ -17,7 +17,7 @@
 			  :key="invoice.id"
 			  class="d-flex align-items-center"
 			  @click="selectInvoice(invoice.name)"
-			  style="margin-left: 20px;"
+			  style="margin: 20px;"
 			>
 			  <input
 				type="checkbox"
@@ -128,9 +128,10 @@
 			freeze: true,
 			callback: function(res){
 				if(res.message){
-					frappe.msgprint("Invoices received: " + me.selectedInvoices.join(", "));
+					frappe.msgprint("Invoices received: " + res.message.join(", "));
 					me.invoices = [];
 					me.items = [];
+					me.loadInvoices();
 				}
 			}
 		});
