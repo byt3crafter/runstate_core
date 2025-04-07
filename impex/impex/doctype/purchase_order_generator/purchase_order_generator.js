@@ -8,6 +8,17 @@ frappe.ui.form.on("Purchase Order Generator", {
 	}
   },
 
+  refresh: function(frm){
+	frm.set_query("purchase_supplier", "items", function(doc, cdt, cdn){
+		return {
+			query: "impex.impex.doctype.purchase_order_generator.purchase_order_generator.get_item_suppliers",
+			filters: {
+				"item_code": locals[cdt][cdn].item_code
+			}
+		}
+	});
+  },
+
   company: function(frm) {
 	frm.trigger('check_po_in_draft');
   },
@@ -39,5 +50,28 @@ frappe.ui.form.on("Purchase Order Generator", {
         frm.dirty();
       },
     });
-  },
+  }
+});
+
+frappe.ui.form.on('Purchase Order Generator Items', {
+	purchase_supplier: function(frm, cdt, cdn){
+		if(locals[cdt][cdn] != ""){
+			frappe.call({
+				doc: frm.doc,
+				method: "get_supplier_rate",
+				args: {
+					supplier: locals[cdt][cdn].purchase_supplier,
+					item_code: locals[cdt][cdn].item_code
+				},
+				freeze: true,
+				freeze_message: "Getting supplier rate",
+				callback: function(ret){
+					locals[cdt][cdn].purchase_rate = ret.message.purchase_rate;
+					locals[cdt][cdn].purchase_currency = ret.message.purchase_currency;
+					frm.refresh_fields();
+					frm.dirty();
+				}
+			});
+		}
+	}
 });

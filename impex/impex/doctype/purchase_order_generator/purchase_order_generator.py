@@ -235,6 +235,8 @@ class PurchaseOrderGenerator(Document):
             item = frappe._dict(item)
             # set required purchase qty for each item
             self.set_required_purchase_qty(item)
+            # replace purchase supplier with preffered supplier if they have been set
+            self.get_preffered_supplier(item)
             if item.purchase_qty > 0:
                 if self.inter_company_purchase:
                     item.purchase_supplier = main_company_supplier
@@ -272,6 +274,53 @@ class PurchaseOrderGenerator(Document):
         item.purchase_currency = (
             item.cheapest_purchase_currency or item.last_purchase_currency
         )
+        
+    def get_preffered_supplier(self, item):
+        # Check if there is a preffered supplier. If there is, then replace the purchase information with the suppliers
+        supplier_exists = frappe.db.exists("Item Supplier", {"parent": item.item_code, "custom_preffered_supplier": 1})
+        if supplier_exists:
+            supplier = frappe.db.get_value("Item Supplier", supplier_exists, "supplier")
+            item.purchase_supplier = supplier
+            
+            # Get the cheapest purchase rate for the supplier
+            cheapest_purchase_rate = frappe.db.sql(
+                f"""SELECT PI.rate, P.currency
+                    FROM `tabPurchase Invoice Item` PI
+                    INNER JOIN `tabPurchase Invoice` P ON PI.parent = P.name
+                    WHERE PI.item_code = %(item_code)s AND P.company = %(company)s AND P.custom_special_order = 0 AND P.docstatus = 1 
+                    	and P.is_return = 0 and P.posting_date BETWEEN %(from_date)s AND %(to_date)s AND P.supplier = %(supplier)s
+                    ORDER BY PI.base_rate ASC
+                    LIMIT 1""",
+                {"item_code": item["item_code"], "company": self.company, "from_date": self.from_date, "to_date": self.to_date, "supplier": supplier},
+                as_dict=True,
+            )
+            if len(cheapest_purchase_rate) > 0:
+                item.purchase_rate = cheapest_purchase_rate[0].rate
+                item.purchase_currency = cheapest_purchase_rate[0].currency
+            else:
+                item.purchase_rate = 0
+                item.purchase_currency = ""
+    
+    @frappe.whitelist()
+    def get_supplier_rate(self, item_code, supplier):
+        cheapest_purchase_rate = frappe.db.sql(
+                f"""SELECT PI.rate, P.currency
+                    FROM `tabPurchase Invoice Item` PI
+                    INNER JOIN `tabPurchase Invoice` P ON PI.parent = P.name
+                    WHERE PI.item_code = %(item_code)s AND P.company = %(company)s AND P.custom_special_order = 0 AND P.docstatus = 1 
+                    	and P.is_return = 0 and P.posting_date BETWEEN %(from_date)s AND %(to_date)s AND P.supplier = %(supplier)s
+                    ORDER BY PI.base_rate ASC
+                    LIMIT 1""",
+                {"item_code": item_code, "company": self.company, "from_date": self.from_date, "to_date": self.to_date, "supplier": supplier},
+                as_dict=True,
+            )
+        if len(cheapest_purchase_rate) > 0:
+            purchase_rate = cheapest_purchase_rate[0].rate
+            purchase_currency = cheapest_purchase_rate[0].currency    
+        else:
+            purchase_rate = 0
+            purchase_currency = ""
+        return {"purchase_rate": purchase_rate, "purchase_currency": purchase_currency}
 
 def get_items_from_sales_orders(
     company, from_date, to_date, item_group=None, items=None
@@ -635,3 +684,17 @@ def create_sales_order(purchase_orders):
 @frappe.whitelist()
 def get_po_in_draft(company):
     return frappe.db.get_value("Impex Company Settings", {"company": company}, "po_in_draft")
+
+@frappe.whitelist()
+def get_item_suppliers(doctype, txt, searchfield, start, page_len, filters):
+    item_code = filters.get('item_code')
+    return frappe.db.sql("""
+            SELECT
+                supplier.name 
+            FROM
+                `tabItem Supplier` AS item
+            LEFT JOIN
+                `tabSupplier` AS supplier ON item.supplier = supplier.name
+            WHERE
+                item.parent = %(item_code)s AND supplier.name LIKE %(supplier)s
+            """, {"item_code": item_code, "supplier": '%' + txt + '%'})
