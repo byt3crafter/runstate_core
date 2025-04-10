@@ -84,8 +84,11 @@ class PriceChange(Document):
                 rule.new_rate = (
                     base_rate * (1 + (rule.margin / 100)) if rule.margin else base_rate
                 )
-                base_prices[rule.price_list] = rule.new_rate
-                processed_rules.add(rule.price_list)
+                
+                if not base_prices.get(rule.price_list):
+                    base_prices[rule.price_list] = {}
+                base_prices[rule.price_list][rule.item_code] = rule.new_rate
+                processed_rules.add(f"{rule.price_list}:{rule.item_code}")
             else:
                 # Add to rules with dependencies for later processing
                 rules_with_dependencies.append(rule)
@@ -97,16 +100,20 @@ class PriceChange(Document):
             still_remaining = []
 
             for rule in remaining_rules:
-                if rule.base_price_list in processed_rules:
+                if f"{rule.base_price_list}:{rule.item_code}" in processed_rules:
                     # Base price list has been processed, we can calculate this rule
-                    base_rate = base_prices.get(rule.base_price_list)
+                    base_rate = base_prices.get(rule.base_price_list, {}).get(rule.item_code)
                     rule.new_rate = (
                         base_rate * (1 + (rule.margin / 100))
-                        if rule.margin
+                        if rule.margin and rule.margin != 0
                         else base_rate
                     )
-                    base_prices[rule.price_list] = rule.new_rate
-                    processed_rules.add(rule.price_list)
+                    
+                    if not base_prices.get(rule.price_list):
+                        base_prices[rule.price_list] = {}
+                    base_prices[rule.price_list][rule.item_code] = rule.new_rate
+                    processed_rules.add(f"{rule.price_list}:{rule.item_code}")
+                    
                     rules_processed_in_this_iteration += 1
                 else:
                     # Base price list not processed yet, keep for next iteration
@@ -132,36 +139,59 @@ class PriceChange(Document):
 
         for rule in self.rule_prices:
             if flt(rule.new_rate, 2) != flt(rule.last_rate, 2):
-                # Check if price exists
-                existing_price = frappe.db.get_value(
-                    "Item Price",
-                    {
+                item_row = next(
+                    (
+                        item
+                        for item in self.items
+                        if item.item_code == rule.item_code
+                    ),
+                    None,
+                )
+                
+                # update if price list is buying or if no last rate or rate change is greater than 2
+                price_change_threshold = Default_Price_Change_Threshold
+                try:
+                    price_change_threshold = frappe.db.get_single_value(
+                        "Price Change Settings", "price_change_threshold"
+                    )
+                except Exception:
+                    price_change_threshold = Default_Price_Change_Threshold
+                    
+                if "Buying" in rule.price_list or (item_row and (
+                        not item_row.last_rate
+                        or abs(item_row.rate_change) > price_change_threshold
+                    )):
+                    
+                    # Check if price exists
+                    existing_price = frappe.db.get_value(
+                        "Item Price",
+                        {
+                            "item_code": rule.item_code,
+                            "price_list": rule.price_list,
+                        },
+                        "name",
+                    )
+
+                    price_data = {
                         "item_code": rule.item_code,
                         "price_list": rule.price_list,
-                    },
-                    "name",
-                )
+                        "price_list_rate": rule.new_rate,
+                        "valid_from": self.posting_date,
+                        "valid_upto": None,
+                        "doctype": "Item Price",
+                    }
 
-                price_data = {
-                    "item_code": rule.item_code,
-                    "price_list": rule.price_list,
-                    "price_list_rate": rule.new_rate,
-                    "valid_from": self.posting_date,
-                    "valid_upto": None,
-                    "doctype": "Item Price",
-                }
+                    if existing_price:
+                        prices_to_update.append(
+                            {"name": existing_price, "rule": rule, **price_data}
+                        )
+                    else:
+                        prices_to_create.append({"rule": rule, **price_data})
 
-                if existing_price:
-                    prices_to_update.append(
-                        {"name": existing_price, "rule": rule, **price_data}
-                    )
-                else:
-                    prices_to_create.append({"rule": rule, **price_data})
-
-            # Update supplier rules if needed
-            if rule.update_sp:
-                if self.update_supplier_rule(supplier_doc, rule):
-                    supplier_rules_modified = True
+                # Update supplier rules if needed
+                if rule.update_sp:
+                    if self.update_supplier_rule(supplier_doc, rule):
+                        supplier_rules_modified = True
 
         # Bulk update/create prices
         if prices_to_update:
@@ -505,7 +535,7 @@ def create_price_change_from_purchase_invoice(
                     changed_prices.append(rule)
 
         if changed_prices:
-            price_change_doc.rule_prices = changed_prices
+            #price_change_doc.rule_prices = changed_prices
             price_change_doc.save(ignore_permissions=True)
             url = frappe.utils.get_url_to_form("Price Change", price_change_doc.name)
             frappe.msgprint(
