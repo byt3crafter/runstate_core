@@ -124,7 +124,8 @@ class PriceChange(Document):
                 # Find the first unprocessed rule to report in the error
                 unprocessed_rule = still_remaining[0]
                 frappe.throw(
-                    f"Could not resolve price list dependencies. Base Price List '{unprocessed_rule.base_price_list}' for '{unprocessed_rule.price_list}' could not be calculated. Check for circular dependencies."
+                    f"""Could not resolve price list dependencies. Base Price List '{unprocessed_rule.base_price_list}' for 
+                    	'{unprocessed_rule.price_list}' could not be calculated. Check for circular dependencies. For Item {unprocessed_rule.item_code}"""
                 )
 
             remaining_rules = still_remaining
