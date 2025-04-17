@@ -9,7 +9,8 @@
   "item_code",
   "label_qty",
   "item_name",
-  "supplier_part_no"
+  "supplier_part_no",
+  "bin_location"
  ],
  "fields": [
   {
@@ -41,12 +42,19 @@
    "in_list_view": 1,
    "label": "Label Qty",
    "reqd": 1
+  },
+  {
+   "fieldname": "bin_location",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Bin Location",
+   "options": "Bin Location"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-03-12 23:19:03.601389",
+ "modified": "2025-04-17 13:39:52.071932",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Item Label Print Item",
