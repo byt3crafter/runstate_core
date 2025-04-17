@@ -2,6 +2,17 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Item Label Print', {
+	refresh: function(frm){
+		frm.set_query("bin_location", "items", function(doc, cdt, cdn){
+			return {
+				"query": "impex.impex.doctype.item_label_print.item_label_print.get_bin_locations",
+				"filters": {
+					"item_code": locals[cdt][cdn].item_code
+				}
+			}
+		});
+	},
+
 	load_items: function(frm){
 		if(!frm.doc.from_purchase_receipt){
 			frappe.msgprint("Please set a Purchase Receipt to get ");
