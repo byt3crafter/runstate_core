@@ -42,6 +42,10 @@ def get_invoices(company):
 		if invoice_name not in invoice_items:
 			invoice_items[invoice_name] = []
 		invoice_items[invoice_name].append(item)
+
+	# Add the quantity of items for each invoice
+	for invoice in invoices:
+		invoice.update({"item_qty": len(invoice_items.get(invoice["name"], []))})
 	return {"invoices": invoices, "items": invoice_items}
 
 @frappe.whitelist()

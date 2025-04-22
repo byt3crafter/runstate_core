@@ -11,7 +11,14 @@
 	  <div class="row mt-4 initialy-hide">
 		<div class="col-md-6">
 		  <div class="frappe-card p-3">
-			<h2 class="h6 fw-bold mb-3">Invoices</h2>
+			<div class="col-md-12 d-flex" style="padding: 0px;">
+				<div class="col-md-6" style="padding: 0px;">
+					<h2 class="h6 fw-bold mb-3">Invoices</h2>
+				</div>
+				<div class="col-md-6" style="padding: 0px;">
+					<h2 class="h6 fw-bold mb-3" style="text-align: right;">No. of Items</h2>
+				</div>
+			</div>
 			<div
 			  v-for="invoice in invoices"
 			  :key="invoice.id"
@@ -24,18 +31,27 @@
 				:value="invoice.name"
 				@change="updateSelectedInvoices(invoice.name)"
 				class="form-check-input me-2"
+				:checked="selectedInvoice === invoice.name"
 			  />
-			  <div style="margin-left: 10px;">
+			  <div style="margin-left: 10px; width: 97%;">
 				<p class="fw-bold mb-0">{{ invoice.name }}</p>
 				<p class="text-muted small">{{ invoice.date }}</p>
 			  </div>
+			  <p class="fw-bold" style="text-align: right;">{{ invoice.item_qty }}</p>
 			</div>
 		  </div>
 		</div>
   
 		<div class="col-md-6">
 		  <div class="frappe-card p-3">
-			<h2 class="h6 fw-bold mb-3">Items</h2>
+			<div class="col-md-12 d-flex" style="padding: 0px;">
+				<div class="col-md-6" style="padding: 0px;">
+					<h2 class="h6 fw-bold mb-3">Items</h2>
+				</div>
+				<div class="col-md-6" style="padding: 0px;">
+					<h2 class="h6 fw-bold mb-3" style="text-align: right;">Qty</h2>
+				</div>
+			</div>
 			<div
 			  v-for="item in items"
 			  :key="item.code"
@@ -66,7 +82,8 @@
 		invoiceItems: {},
 		selectedInvoices: [],
 		items: [],
-		companyField: null
+		companyField: null,
+		selectedInvoice: ''
 	  };
 	},
 	mounted() {
@@ -111,19 +128,20 @@
 		this.items = this.invoiceItems[invoiceName];
 	  },
 	  updateSelectedInvoices(invoiceName) {
-			const index = this.selectedInvoices.indexOf(invoiceName);
-			if (index > -1) {
-				this.selectedInvoices.splice(index, 1);
-			} else {
-				this.selectedInvoices.push(invoiceName);
-			}
+			// const index = this.selectedInvoices.indexOf(invoiceName);
+			// if (index > -1) {
+			// 	this.selectedInvoices.splice(index, 1);
+			// } else {
+			// 	this.selectedInvoices.push(invoiceName);
+			// }
+			this.selectedInvoice = invoiceName;
 	  },
 	  confirmReceipt() {
 		let me = this;
 		frappe.call({
 			method: "impex.impex.page.invoice_receipt.invoice_receipt.confirm_receipt",
 			args: {
-				"invoices": me.selectedInvoices
+				"invoices": [me.selectedInvoice]
 			},
 			freeze: true,
 			callback: function(res){
