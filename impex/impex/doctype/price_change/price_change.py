@@ -544,3 +544,215 @@ def create_price_change_from_purchase_invoice(
             )
         else:
             frappe.msgprint("No Price Change Created, No Changes Found")
+
+@frappe.whitelist()
+def recalculate_zero_rated_item_prices():
+    """Create Price Change document for items with stock balances but zero rated prices
+      for selling price lists grouped by their Purchase Order or Purchase Invoice."""
+    
+    # Get all items that have 0 item price but have stock balance > 0
+    items = frappe.db.sql("""
+        SELECT DISTINCT
+            item.name AS item_code,
+            item.item_name,
+            item.item_group
+        FROM 
+            `tabItem` AS item
+        LEFT JOIN 
+            `tabItem Price` AS price ON item.name = price.item_code
+        LEFT JOIN 
+            `tabBin` AS bin ON item.name = bin.item_code
+        WHERE 
+            price.price_list_rate = 0
+            AND bin.actual_qty > 0
+            AND item.disabled = 0
+            AND item.is_stock_item = 1
+            AND price.price_list NOT LIKE '%Buying%'
+    """, as_dict=1)
+
+    # Group items by their last Purchase Order or Purchase Invoice
+    grouped_items = {}
+
+    for item in items:
+        item_code = item["item_code"]
+
+        # Fetch the last Purchase Order for the item
+        last_purchase_order = frappe.db.sql("""
+            SELECT
+                po.name AS reference_name, po.transaction_date AS posting_date,
+                po.company, po.currency, po.supplier, poi.base_rate, poi.rate,
+                poi.name AS ref_row_id, poi.qty, poi.uom, poi.stock_qty,
+                poi.amount, poi.base_amount
+            FROM
+                `tabPurchase Order` AS po
+            INNER JOIN
+                `tabPurchase Order Item` AS poi ON po.name = poi.parent
+            WHERE
+                poi.item_code = %(item_code)s
+                AND po.docstatus = 1
+            ORDER BY
+                po.transaction_date DESC
+            LIMIT 1
+        """, {"item_code": item_code}, as_dict=1)
+
+        # If no Purchase Order exists, fetch the last Purchase Invoice
+        if not last_purchase_order:
+            last_purchase_invoice = frappe.db.sql("""
+                SELECT
+                    pi.name AS reference_name, pi.posting_date, pi.company,
+                    pi.currency, pi.supplier, pii.base_rate, pii.rate,
+                    pii.name AS ref_row_id, pii.qty, pii.uom, pii.stock_qty,
+                    pii.amount, pii.base_amount
+                FROM
+                    `tabPurchase Invoice` AS pi
+                INNER JOIN
+                    `tabPurchase Invoice Item` AS pii ON pi.name = pii.parent
+                WHERE
+                    pii.item_code = %(item_code)s
+                    AND pi.docstatus = 1
+                ORDER BY
+                    pi.posting_date DESC
+                LIMIT 1
+            """, {"item_code": item_code}, as_dict=1)
+
+            if last_purchase_invoice:
+                reference = last_purchase_invoice[0]
+                key = f"Invoice:{reference.reference_name}"
+                doc_type = "Purchase Invoice"
+            else:
+                continue
+        else:
+            reference = last_purchase_order[0]
+            key = f"Order:{reference.reference_name}"
+            doc_type = "Purchase Order"
+
+        # Check if it's the main company
+        main_company = frappe.db.get_single_value("Impex Settings", "main_company")
+        if reference.company != main_company:
+            continue
+
+        # Initialize group if not exists
+        if key not in grouped_items:
+            grouped_items[key] = {
+                "doc_type": doc_type,
+                "reference": reference,
+                "items": [],
+                "items_data": {},
+                "price_lists": set()
+            }
+
+        # Add item to group
+        grouped_items[key]["items"].append({
+            "item_code": item_code,
+            "item_name": item["item_name"],
+            "item_group": item["item_group"],
+            "base_rate": reference.base_rate,
+            "rate": reference.rate,
+            "ref_row_id": reference.ref_row_id,
+            "qty": reference.qty, 
+            "uom": reference.uom, 
+            "stock_qty": reference.stock_qty,
+            "amount": reference.amount, 
+            "base_amount": reference.base_amount
+        })
+
+    # Create Price Change documents for each group
+    for group_key, group_data in grouped_items.items():
+        # Create Price Change doc
+        price_change_doc = frappe.new_doc("Price Change")
+        price_change_doc.update({
+            f"{group_data['doc_type'].lower().replace(' ', '_')}": group_data["reference"].reference_name,
+            "posting_date": group_data["reference"].posting_date,
+            "supplier": group_data["reference"].supplier,
+            "currency": group_data["reference"].currency,
+        })
+
+        # Get supplier document
+        supplier_doc = frappe.get_cached_doc("Supplier", group_data["reference"].supplier)
+
+        # Process items and rules
+        for item in group_data["items"]:
+            # Add item to Price Change
+            new_item = price_change_doc.append("items", item)
+            
+            # Cache item data for rules
+            if item["item_code"] not in group_data["items_data"]:
+                group_data["items_data"][item["item_code"]] = {
+                    "item_group": frappe.get_cached_doc("Item Group", item["item_group"]),
+                    "item": frappe.get_cached_doc("Item", item["item_code"]),
+                    "rules": {}
+                }
+
+            # Get rules from Item Group
+            for group_rule in group_data["items_data"][item["item_code"]]["item_group"].rule_prices:
+                group_data["price_lists"].add(group_rule.price_list)
+                group_data["items_data"][item["item_code"]]["rules"][group_rule.price_list] = {
+                    "item_code": item["item_code"],
+                    "item_name": item["item_name"],
+                    "price_list": group_rule.price_list,
+                    "margin": group_rule.margin,
+                    "base_price_list": group_rule.base_price_list,
+                    "source": "Item Group"
+                }
+
+            # Override with Item rules
+            for item_rule in group_data["items_data"][item["item_code"]]["item"].rule_prices:
+                group_data["price_lists"].add(item_rule.price_list)
+                group_data["items_data"][item["item_code"]]["rules"][item_rule.price_list] = {
+                    "item_code": item["item_code"],
+                    "item_name": item["item_name"],
+                    "price_list": item_rule.price_list,
+                    "margin": item_rule.margin,
+                    "base_price_list": item_rule.base_price_list,
+                    "source": "Item"
+                }
+
+            # Override with Supplier rules
+            for supplier_rule in supplier_doc.rule_prices:
+                if supplier_rule.item_code == item["item_code"]:
+                    group_data["price_lists"].add(supplier_rule.price_list)
+                    group_data["items_data"][item["item_code"]]["rules"][supplier_rule.price_list] = {
+                        "item_code": item["item_code"],
+                        "item_name": item["item_name"],
+                        "price_list": supplier_rule.price_list,
+                        "margin": supplier_rule.margin,
+                        "base_price_list": supplier_rule.base_price_list,
+                        "source": "Supplier"
+                    }
+
+        # Add all rules to price change doc
+        for item_data in group_data["items_data"].values():
+            for rule in item_data["rules"].values():
+                price_change_doc.append("rule_prices", rule)
+
+        if price_change_doc.items:
+            # Calculate prices
+            price_change_doc.calc_price_change()
+
+            # Check for price changes
+            price_change_threshold = frappe.db.get_single_value(
+                "Price Change Settings", 
+                "price_change_threshold"
+            ) or Default_Price_Change_Threshold
+
+            changed_prices = []
+            for rule in price_change_doc.rule_prices:
+                if flt(rule.new_rate, 2) != flt(rule.last_rate, 2):
+                    item_row = next(
+                        (item for item in price_change_doc.items if item.item_code == rule.item_code),
+                        None
+                    )
+                    if "Buying" in rule.price_list:
+                        changed_prices.append(rule)
+                    elif item_row and (
+                        not item_row.last_rate
+                        or abs(item_row.rate_change) > price_change_threshold
+                    ):
+                        changed_prices.append(rule)
+
+            if changed_prices:
+                price_change_doc.save(ignore_permissions=True)
+                url = frappe.utils.get_url_to_form("Price Change", price_change_doc.name)
+                frappe.msgprint(
+                    f"Price Change Created for {group_key}: <a href='{url}'>{price_change_doc.name}</a>"
+                )

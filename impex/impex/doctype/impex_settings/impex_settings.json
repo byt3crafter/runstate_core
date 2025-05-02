@@ -9,6 +9,8 @@
  "field_order": [
   "create_pick_list",
   "update_sales_orders_prices",
+  "column_break_ugrdt",
+  "update_item_prices",
   "section_purichase_order_generator",
   "create_sales_order",
   "main_company",
@@ -90,12 +92,22 @@
    "fieldtype": "Link",
    "label": "Sales Taxes and Charges Template",
    "options": "Sales Taxes and Charges Template"
+  },
+  {
+   "fieldname": "column_break_ugrdt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Recalculates item prices for items with \"0\" prices",
+   "fieldname": "update_item_prices",
+   "fieldtype": "Button",
+   "label": "Update Item Prices"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-04-03 23:45:52.187596",
+ "modified": "2025-05-02 10:20:18.850441",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Impex Settings",
