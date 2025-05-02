@@ -11,6 +11,7 @@ from erpnext.manufacturing.doctype.blanket_order.blanket_order import (
 from erpnext.accounts.doctype.sales_invoice.sales_invoice import (
 	validate_inter_company_party,
 )
+import json
 
 class CustomStockController(StockController):
     def validate(self):
