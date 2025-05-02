@@ -63,4 +63,14 @@ frappe.ui.form.on("Impex Settings", {
       },
     });
   },
+
+  update_item_prices: function(frm){
+    frappe.call({
+		method: "impex.impex.doctype.price_change.price_change.recalculate_zero_rated_item_prices",
+		freeze: true,
+		callback: function (r) {
+		  console.log(r);
+		},
+	  });
+  }
 });
