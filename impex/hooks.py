@@ -299,7 +299,9 @@ fixtures = [
                     "Delivery Note Item-custom_column_break_u6ssy",
                     "Delivery Note Item-custom_branch_purchase_order_item",
                     "Purchase Order-custom_create_sales_order",
-                    "Item Supplier-custom_preffered_supplier"
+                    "Item Supplier-custom_preffered_supplier",
+                    "Purchase Receipt-custom_inter_company_invoice_reference",
+                    "Purchase Receipt Item-custom_delivery_note"
                 ],
             ]
         ],
