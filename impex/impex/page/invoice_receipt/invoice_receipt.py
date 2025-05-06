@@ -26,7 +26,6 @@ def get_invoices(company):
 			AND (sii.custom_branch_purchase_order IS NOT NULL AND sii.custom_branch_purchase_order != '')
 	"""
 	items = frappe.db.sql(query, {"customer": customer}, as_dict=True)
-	print("Items: ", items)
 	invoice_items = {}
 	invoices = []
 
@@ -47,64 +46,6 @@ def get_invoices(company):
 	for invoice in invoices:
 		invoice.update({"item_qty": len(invoice_items.get(invoice["name"], []))})
 	return {"invoices": invoices, "items": invoice_items}
-
-# @frappe.whitelist()
-# def confirm_receipt(invoices):
-# 	if isinstance(invoices, str):
-# 		invoices = json.loads(invoices)
-# 	current_user = frappe.session.user
-# 	current_datetime = now_datetime()
-# 	successful_invoices = []
-
-# 	for invoice in invoices:
-# 		all_pos_received = True
-# 		doc = frappe.get_doc("Sales Invoice", invoice)
-
-# 		purchase_orders = {}
-# 		delivery_note_items = get_delivery_note_items(doc)
-
-# 		for row in doc.items:
-# 			if row.custom_branch_purchase_order and row.custom_branch_purchase_order not in purchase_orders:
-# 				purchase_orders[row.custom_branch_purchase_order] = set()
-# 			purchase_orders[row.custom_branch_purchase_order].add(
-# 				(row.item_code, row.custom_branch_purchase_order_item, row.qty, row.name)
-# 			)
-
-# 		for po, items in purchase_orders.items():
-# 			receipt_doc = make_purchase_receipt(po)
-# 			purchase_order = frappe.get_doc("Purchase Order", po)
-# 			first_key = next(iter(delivery_note_items))
-# 			receipt_doc.update({"inter_company_reference": delivery_note_items[first_key]['parent']})
-
-# 			receipt_doc.items = []
-# 			for item_code, po_item, qty, name in items:
-# 				receipt_doc.append("items", {
-# 					"item_code": item_code,
-# 					"qty": qty,
-# 					"purchase_order": po,
-# 					"purchase_order_item": po_item,
-# 					"delivery_note_item": delivery_note_items[name]['name'],
-# 					"from_warehouse": doc.items[0].warehouse,
-# 					"warehouse": purchase_order.items[0].warehouse
-# 				})
-			
-# 			try:
-# 				#receipt_doc.insert()
-# 				receipt_doc.submit()
-# 			except Exception as e:
-# 				all_pos_received = False
-# 				frappe.log_error(message=str(e), title="Error in Purchase Receipt Creation")
-# 				frappe.msgprint(f"An error occurred while creating the Purchase Receipt for Invoice {invoice}. {e}")
-# 				break
-# 		if all_pos_received:
-# 			frappe.db.set_value("Sales Invoice", invoice, "custom_receipt_status", "Received")
-# 			frappe.db.set_value("Sales Invoice", invoice, "custom_received_by", current_user)
-# 			frappe.db.set_value("Sales Invoice", invoice, "custom_receipt_date", current_datetime)
-# 			frappe.db.commit()
-# 			successful_invoices.append(invoice)
-# 		else:
-# 			frappe.db.rollback()
-# 	return successful_invoices
 
 @frappe.whitelist()
 def confirm_receipt(invoices):

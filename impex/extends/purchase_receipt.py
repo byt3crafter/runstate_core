@@ -28,3 +28,18 @@ def validate_part_number(doc):
                                 f"Custom Part Number {item.custom_part_number} does not match the Supplier Part Number {sup_part.supplier_part_no} for Item {item.item_code}"
                             )
                         )
+
+def on_cancel(doc, method):
+    # On cancel of Purchase Receipt, change receipt status of associated sales invoice
+    if doc.custom_inter_company_invoice_reference:
+        linked_invoice = frappe.get_doc(
+            "Sales Invoice", doc.custom_inter_company_invoice_reference
+        )
+        if linked_invoice:
+            linked_invoice.update({
+                "custom_receipt_status": '',
+                "custom_receipt_date": '',
+                "custom_received_by": ''
+            })
+            linked_invoice.save(ignore_permissions=True)
+            linked_invoice.notify_update()

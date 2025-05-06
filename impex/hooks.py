@@ -143,6 +143,7 @@ doc_events = {
     },
     "Purchase Receipt": {
         "on_submit": "impex.extends.purchase_receipt.on_submit",
+        "on_cancel": "impex.extends.purchase_receipt.on_cancel"
     },
     "Sales Invoice": {
 		"autoname": "impex.extends.sales_invoice.autoname",
