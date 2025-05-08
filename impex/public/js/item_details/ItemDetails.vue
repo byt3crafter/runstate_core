@@ -68,11 +68,6 @@
 					{{ companies_details[company].twelve_months_sales}}
 				</td>
 			</tr>
-			<!-- <tr v-for="row in summary.rows" :key="row.label">
-			  <th class="text-start">{{ row.label }}</th>
-			  <td v-for="(val, idx) in row.values" :key="idx">{{ val }}</td>
-			  <td v-for="company in summary.companies" :key="company">{{ val }}</td>
-			</tr> -->
 		  </tbody>
 		</table>
 	  </div>
@@ -86,16 +81,6 @@
 			  <th v-for="(value, key) in monthlySales" :key="key">{{ key }}</th>
 			</tr>
 		  </thead>
-		  <!-- <thead class="table-light">
-			<tr>
-			  <th v-for="header in monthlySales.headers" :key="header">{{ header }}</th>
-			</tr>
-		  </thead>
-		  <tbody>
-			<tr v-for="row in monthlySales.rows" :key="row.id">
-			  <td v-for="(val, idx) in row.values" :key="idx">{{ val }}</td>
-			</tr>
-		  </tbody> -->
 		  <tbody>
 			<tr>
 			  <th>Sold</th>

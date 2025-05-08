@@ -108,6 +108,8 @@ def get_item_details(item_code):
 		if len(location) > 0:
 			bin_location = location[0].location
 
+	cost = get_cost(item_code, user_company)
+
 	return {
 		"item_code": item_code,
 		"item_name": item_name,
@@ -119,8 +121,8 @@ def get_item_details(item_code):
 		"total_sold": get_sold(item_code, user_company),
 		"total_purchased": get_purchased(item_code, user_company),
 		"current_stock": get_stock_balance(item_code, user_company),
-		"cost": get_cost(item_code, user_company),
-		"selling_prices": get_selling_prices(item_code, user_company),
+		"cost": cost,
+		"selling_prices": get_selling_prices(item_code, user_company, cost),
 		"company_details": get_company_item_details(item_code, user_company),
 		"monthly_sales": get_monthly_sales(item_code, user_company),
 		"monthly_purchases": get_monthly_purchases(item_code, user_company),
@@ -232,8 +234,8 @@ def get_selling_prices(item_code, user_company, cost=0):
 
 			selling_prices.append({
 				"price_list": price_list,
-				"price": price,
-				"percent_diff": percent_increase
+				"price": round(price, 2),
+				"percent_diff": round(percent_increase, 2)
 			})
 	return selling_prices
 
