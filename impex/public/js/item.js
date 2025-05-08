@@ -1,5 +1,9 @@
 frappe.ui.form.on("Item", {
 	refresh: function(frm){
+		// Add item details button
+		frm.add_custom_button(__('Item Details'), function () {
+			frm.events.launch_item_details_popup(frm);
+		});
 
 		// Create or clear an existing section for Bin data
 		let section = frm.dashboard.add_section("", __("Bin Locations"));
@@ -111,6 +115,25 @@ frappe.ui.form.on("Item", {
 
 			d.show();
 		});
+	},
+
+	launch_item_details_popup: function (frm) {
+		// Create a dialog to host the Vue component
+		const dialog = new frappe.ui.Dialog({
+		  title: __('Item Details'),
+		  size: 'extra-large',
+		  fields: [
+			{
+			  fieldtype: 'HTML',
+			  fieldname: 'vue_container',
+			},
+		  ],
+		});
+
+		const wrapper = dialog.fields_dict.vue_container.$wrapper[0];
+		console.log("Wrapper before: ", wrapper);
+		wrapper.invoice_receipt = new impex.item_details.ItemDetails(wrapper, frm.doc.item_code);
+		dialog.show()
 	}
 
 });
