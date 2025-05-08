@@ -14,6 +14,7 @@ class PriceChange(Document):
     def validate(self):
         self.load_price_list_data()
         self.calc_price_change()
+        self.load_changed_prices()
 
     def before_submit(self):
         self.update_item_price_from_price_change()
@@ -129,6 +130,38 @@ class PriceChange(Document):
                 )
 
             remaining_rules = still_remaining
+        
+    def load_changed_prices(self):
+        price_change_threshold = Default_Price_Change_Threshold
+        try:
+            price_change_threshold = frappe.db.get_single_value(
+                "Price Change Settings", "price_change_threshold"
+            )
+        except Exception:
+            price_change_threshold = Default_Price_Change_Threshold
+        self.changed_prices = []
+        for rule in self.rule_prices:
+            if flt(rule.new_rate, 2) != flt(rule.last_rate, 2):
+                item_row = next(
+                    (
+                        item
+                        for item in self.items
+                        if item.item_code == rule.item_code
+                    ),
+                    None,
+                )
+
+                if "Buying" in rule.price_list or (item_row and (
+                        not item_row.last_rate
+                        or abs(item_row.rate_change) > price_change_threshold
+                    )):
+                    self.append("changed_prices", {
+                        "item_code": rule.item_code,
+                        "price_list": rule.price_list,
+                        "old_rate": rule.last_rate,
+                        "new_rate": rule.new_rate
+                    })
+        
 
     def update_item_price_from_price_change(self):
         """Bulk update item prices"""
@@ -432,7 +465,16 @@ def create_price_change_from_purchase_invoice(
 
         # Index rates by item_code
         last_rates_dict = {r.item_code: r.base_rate for r in last_rates}
-
+    
+    # update if price list is buying or if no last rate or rate change is greater than 2
+    price_change_threshold = Default_Price_Change_Threshold
+    try:
+        price_change_threshold = frappe.db.get_single_value(
+            "Price Change Settings", "price_change_threshold"
+        )
+    except Exception:
+        price_change_threshold = Default_Price_Change_Threshold
+    
     # Process items
     for item in doc.items:
         # Add item to Price Change
@@ -495,7 +537,7 @@ def create_price_change_from_purchase_invoice(
                     "base_price_list": supplier_rule.base_price_list,
                     "source": "Supplier",
                 }
-
+        
     # Add all rules to price change doc
     for item_data in items_data.values():
         for rule in item_data["rules"].values():
