@@ -18,6 +18,7 @@
   {
    "fieldname": "company",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "in_list_view": 1,
    "label": "Company",
    "options": "Company",
@@ -66,7 +67,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-03-28 19:41:20.928989",
+ "modified": "2025-05-11 16:55:36.118653",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Impex Company Settings",

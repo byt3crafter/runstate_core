@@ -101,13 +101,15 @@ doctype_js = {
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+permission_query_conditions = {
+	"Supplier": "impex.extends.supplier.get_permission_query_conditions",
+	"Impex Settings": "impex.impex.doctype.impex_settings.impex_settings.get_permission_query_conditions",
+}
+
+has_permission = {
+	"Supplier": "impex.extends.supplier.has_permission",
+	"Impex Settings": "impex.impex.doctype.impex_settings.impex_settings.has_permission",
+}
 
 # DocType Class
 # ---------------
