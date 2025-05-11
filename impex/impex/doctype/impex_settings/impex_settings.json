@@ -41,6 +41,7 @@
   {
    "fieldname": "main_company",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "label": "Main Company (for inter-company purchases)",
    "options": "Company",
    "permlevel": 1
@@ -70,7 +71,8 @@
    "default": "0",
    "fieldname": "create_sales_order",
    "fieldtype": "Check",
-   "label": "Create Sales Order On Submit"
+   "label": "Create Sales Order On Submit",
+   "permlevel": 1
   },
   {
    "fieldname": "column_break_ahtvy",
@@ -80,7 +82,8 @@
    "fieldname": "tax_template",
    "fieldtype": "Link",
    "label": "Purchase Taxes and Charges Template",
-   "options": "Purchase Taxes and Charges Template"
+   "options": "Purchase Taxes and Charges Template",
+   "permlevel": 1
   },
   {
    "fieldname": "default_settings_section",
@@ -91,7 +94,8 @@
    "fieldname": "sales_tax_template",
    "fieldtype": "Link",
    "label": "Sales Taxes and Charges Template",
-   "options": "Sales Taxes and Charges Template"
+   "options": "Sales Taxes and Charges Template",
+   "permlevel": 1
   },
   {
    "fieldname": "column_break_ugrdt",
@@ -107,7 +111,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-05-02 10:20:18.850441",
+ "modified": "2025-05-11 16:54:45.907670",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Impex Settings",

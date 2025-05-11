@@ -1,17 +1,10 @@
-# Copyright (c) 2024, Yousef Restom and contributors
-# For license information, please see license.txt
-
 import frappe
-from frappe.model.document import Document
 
-class ImpexSettings(Document):
-	pass
-
-def check_settings_permission(user):
+def check_supplier_permission(user):
 	if not user:
 		user = frappe.session.user
 	
-	return frappe.has_permission("Impex Settings", "read", user=user)
+	return frappe.has_permission("Supplier", "read", user=user)
 
 def get_permission_query_conditions(user):
 	# Override permission based on company for internal supplier
@@ -19,7 +12,7 @@ def get_permission_query_conditions(user):
 		user = frappe.session.user
 	
 	# Check if user has Supplier read permission
-	if not check_settings_permission(user):
+	if not check_supplier_permission(user):
 		return "1=0"  # Return false condition if no permission
 	
 def has_permission(user=None):
@@ -27,7 +20,7 @@ def has_permission(user=None):
 		user = frappe.session.user
 	
 	# Check if user has Supplier read permission
-	if not check_settings_permission(user):
+	if not check_supplier_permission(user):
 		return False
 	
 	return True
