@@ -86,7 +86,8 @@ class BinLocationImportTool(Document):
 				self.log_error(item_code, f"Item code {item_code} not found")
 				continue
 
-			bin = frappe.db.exists("Bin Location", {"location": row[4]})
+			bin = frappe.db.exists("Bin Location", {"location": row[4], "warehouse": self.warehouse}, cache=True)
+			#frappe.log_error("Bin exists", f"Location: {row[4]}, Warehouse: {self.warehouse}, Bin: {bin}")
 			if bin:
 				bin = frappe.get_doc("Bin Location", bin)
 			else:
@@ -101,7 +102,6 @@ class BinLocationImportTool(Document):
 				#bin.save(ignore_permissions=True)
 
 			# If location exists, check if it's in the bin, if not, then delete it
-			location_exists = frappe.db.exists("Bin Location Item", {"item_code": item_code})
 			location_exists = frappe.db.sql("""
 						SELECT
 							bli.name, parent
