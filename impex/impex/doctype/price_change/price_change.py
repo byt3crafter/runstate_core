@@ -85,6 +85,14 @@ class PriceChange(Document):
                 rule.new_rate = (
                     base_rate * (1 + (rule.margin / 100)) if rule.margin else base_rate
                 )
+
+                if rule.last_rate and flt(rule.new_rate, 2) != flt(rule.last_rate, 2):
+                    rule.rate_change = flt(
+                        ((rule.new_rate - rule.last_rate) / rule.new_rate) * 100,
+                        2,
+                    )
+                else:
+                    rule.rate_change = 0
                 
                 if not base_prices.get(rule.price_list):
                     base_prices[rule.price_list] = {}
@@ -109,6 +117,14 @@ class PriceChange(Document):
                         if rule.margin and rule.margin != 0
                         else base_rate
                     )
+                    
+                    if rule.last_rate and flt(rule.new_rate, 2) != flt(rule.last_rate, 2):
+                        rule.rate_change = flt(
+                            ((rule.new_rate - rule.last_rate) / rule.new_rate) * 100,
+                            2,
+                        )
+                    else:
+                        rule.rate_change = 0
                     
                     if not base_prices.get(rule.price_list):
                         base_prices[rule.price_list] = {}
@@ -142,19 +158,9 @@ class PriceChange(Document):
         self.changed_prices = []
         for rule in self.rule_prices:
             if flt(rule.new_rate, 2) != flt(rule.last_rate, 2):
-                item_row = next(
-                    (
-                        item
-                        for item in self.items
-                        if item.item_code == rule.item_code
-                    ),
-                    None,
-                )
-
-                if "Buying" in rule.price_list or (item_row and (
-                        not item_row.last_rate
-                        or abs(item_row.rate_change) > price_change_threshold
-                    )):
+                if "Buying" in rule.price_list or (not rule.last_rate
+                        or abs(rule.rate_change) > price_change_threshold
+                    ):
                     self.append("changed_prices", {
                         "item_code": rule.item_code,
                         "price_list": rule.price_list,
