@@ -148,25 +148,25 @@ class PriceChange(Document):
             remaining_rules = still_remaining
         
     def load_changed_prices(self):
-        price_change_threshold = Default_Price_Change_Threshold
-        try:
-            price_change_threshold = frappe.db.get_single_value(
-                "Price Change Settings", "price_change_threshold"
-            )
-        except Exception:
-            price_change_threshold = Default_Price_Change_Threshold
+        # price_change_threshold = Default_Price_Change_Threshold
+        # try:
+        #     price_change_threshold = frappe.db.get_single_value(
+        #         "Price Change Settings", "price_change_threshold"
+        #     )
+        # except Exception:
+        #     price_change_threshold = Default_Price_Change_Threshold
         self.changed_prices = []
         for rule in self.rule_prices:
-            if flt(rule.new_rate, 2) != flt(rule.last_rate, 2):
-                if "Buying" in rule.price_list or (not rule.last_rate
-                        or abs(rule.rate_change) > price_change_threshold
-                    ):
-                    self.append("changed_prices", {
-                        "item_code": rule.item_code,
-                        "price_list": rule.price_list,
-                        "old_rate": rule.last_rate,
-                        "new_rate": rule.new_rate
-                    })
+            if not rule.last_rate or flt(rule.new_rate, 2) != flt(rule.last_rate, 2):
+                # if "Buying" in rule.price_list or (not rule.last_rate
+                #         or abs(rule.rate_change) > price_change_threshold
+                #     ):
+                self.append("changed_prices", {
+                    "item_code": rule.item_code,
+                    "price_list": rule.price_list,
+                    "old_rate": rule.last_rate,
+                    "new_rate": rule.new_rate
+                })
         
 
     def update_item_price_from_price_change(self):
@@ -179,29 +179,29 @@ class PriceChange(Document):
 
         for rule in self.rule_prices:
             if flt(rule.new_rate, 2) != flt(rule.last_rate, 2):
-                item_row = next(
-                    (
-                        item
-                        for item in self.items
-                        if item.item_code == rule.item_code
-                    ),
-                    None,
-                )
+                # item_row = next(
+                #     (
+                #         item
+                #         for item in self.items
+                #         if item.item_code == rule.item_code
+                #     ),
+                #     None,
+                # )
                 
-                # update if price list is buying or if no last rate or rate change is greater than 2
-                price_change_threshold = Default_Price_Change_Threshold
-                try:
-                    price_change_threshold = frappe.db.get_single_value(
-                        "Price Change Settings", "price_change_threshold"
-                    )
-                except Exception:
-                    price_change_threshold = Default_Price_Change_Threshold
+                # # update if price list is buying or if no last rate or rate change is greater than 2
+                # price_change_threshold = Default_Price_Change_Threshold
+                # try:
+                #     price_change_threshold = frappe.db.get_single_value(
+                #         "Price Change Settings", "price_change_threshold"
+                #     )
+                # except Exception:
+                #     price_change_threshold = Default_Price_Change_Threshold
                     
-                if "Buying" in rule.price_list or (item_row and (
-                        not item_row.last_rate
-                        or abs(item_row.rate_change) > price_change_threshold
-                    )):
-                    
+                # if "Buying" in rule.price_list or (item_row and (
+                #         not item_row.last_rate
+                #         or abs(item_row.rate_change) > price_change_threshold
+                #     )):
+                if not rule.last_rate or flt(rule.new_rate, 2) != flt(rule.last_rate, 2):  
                     # Check if price exists
                     existing_price = frappe.db.get_value(
                         "Item Price",
@@ -473,13 +473,13 @@ def create_price_change_from_purchase_invoice(
         last_rates_dict = {r.item_code: r.base_rate for r in last_rates}
     
     # update if price list is buying or if no last rate or rate change is greater than 2
-    price_change_threshold = Default_Price_Change_Threshold
-    try:
-        price_change_threshold = frappe.db.get_single_value(
-            "Price Change Settings", "price_change_threshold"
-        )
-    except Exception:
-        price_change_threshold = Default_Price_Change_Threshold
+    # price_change_threshold = Default_Price_Change_Threshold
+    # try:
+    #     price_change_threshold = frappe.db.get_single_value(
+    #         "Price Change Settings", "price_change_threshold"
+    #     )
+    # except Exception:
+    #     price_change_threshold = Default_Price_Change_Threshold
     
     # Process items
     for item in doc.items:
@@ -553,35 +553,35 @@ def create_price_change_from_purchase_invoice(
         # Calculate prices to check for changes
         price_change_doc.calc_price_change()
 
-        price_change_threshold = Default_Price_Change_Threshold
-        try:
-            price_change_threshold = frappe.db.get_single_value(
-                "Price Change Settings", "price_change_threshold"
-            )
-        except Exception:
-            price_change_threshold = Default_Price_Change_Threshold
+        # price_change_threshold = Default_Price_Change_Threshold
+        # try:
+        #     price_change_threshold = frappe.db.get_single_value(
+        #         "Price Change Settings", "price_change_threshold"
+        #     )
+        # except Exception:
+        #     price_change_threshold = Default_Price_Change_Threshold
 
         # Check if any prices actually changed
         changed_prices = []
         for rule in price_change_doc.rule_prices:
-            if flt(rule.new_rate, 2) != flt(rule.last_rate, 2):
-                item_row = next(
-                    (
-                        item
-                        for item in price_change_doc.items
-                        if item.item_code == rule.item_code
-                    ),
-                    None,
-                )
-                # update if price list is buying
-                if "Buying" in rule.price_list:
-                    changed_prices.append(rule)
-                # update if no last rate or rate change is greater than 2
-                elif item_row and (
-                    not item_row.last_rate
-                    or abs(item_row.rate_change) > price_change_threshold
-                ):
-                    changed_prices.append(rule)
+            if not rule.last_rate or flt(rule.new_rate, 2) != flt(rule.last_rate, 2):
+                # item_row = next(
+                #     (
+                #         item
+                #         for item in price_change_doc.items
+                #         if item.item_code == rule.item_code
+                #     ),
+                #     None,
+                # )
+                # # update if price list is buying
+                # if "Buying" in rule.price_list:
+                #     changed_prices.append(rule)
+                # # update if no last rate or rate change is greater than 2
+                # elif item_row and (
+                #     not item_row.last_rate
+                #     or abs(item_row.rate_change) > price_change_threshold
+                # ):
+                changed_prices.append(rule)
 
         if changed_prices:
             #price_change_doc.rule_prices = changed_prices
@@ -778,25 +778,25 @@ def recalculate_zero_rated_item_prices():
             price_change_doc.calc_price_change()
 
             # Check for price changes
-            price_change_threshold = frappe.db.get_single_value(
-                "Price Change Settings", 
-                "price_change_threshold"
-            ) or Default_Price_Change_Threshold
+            # price_change_threshold = frappe.db.get_single_value(
+            #     "Price Change Settings", 
+            #     "price_change_threshold"
+            # ) or Default_Price_Change_Threshold
 
             changed_prices = []
             for rule in price_change_doc.rule_prices:
-                if flt(rule.new_rate, 2) != flt(rule.last_rate, 2):
-                    item_row = next(
-                        (item for item in price_change_doc.items if item.item_code == rule.item_code),
-                        None
-                    )
-                    if "Buying" in rule.price_list:
-                        changed_prices.append(rule)
-                    elif item_row and (
-                        not item_row.last_rate
-                        or abs(item_row.rate_change) > price_change_threshold
-                    ):
-                        changed_prices.append(rule)
+                if not rule.last_rate or flt(rule.new_rate, 2) != flt(rule.last_rate, 2):
+                    # item_row = next(
+                    #     (item for item in price_change_doc.items if item.item_code == rule.item_code),
+                    #     None
+                    # )
+                    # if "Buying" in rule.price_list:
+                    #     changed_prices.append(rule)
+                    # elif item_row and (
+                    #     not item_row.last_rate
+                    #     or abs(item_row.rate_change) > price_change_threshold
+                    # ):
+                    changed_prices.append(rule)
 
             if changed_prices:
                 price_change_doc.save(ignore_permissions=True)
