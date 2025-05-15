@@ -117,19 +117,19 @@
   {
    "fieldname": "changed_prices_section",
    "fieldtype": "Section Break",
-   "label": "Changed Prices"
+   "label": "Prices to be Updated"
   },
   {
    "fieldname": "changed_prices",
    "fieldtype": "Table",
-   "label": "Changed Prices",
+   "label": "Prices to be Updated",
    "options": "Price Change Changed Prices"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-05-08 14:51:12.956196",
+ "modified": "2025-05-11 21:14:31.515659",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Price Change",
