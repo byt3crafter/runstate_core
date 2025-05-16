@@ -56,6 +56,7 @@
   {
    "fieldname": "main_company_warehouse",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "label": "Main Company Default Sales Warehouse",
    "options": "Warehouse",
    "permlevel": 1
@@ -81,6 +82,7 @@
   {
    "fieldname": "tax_template",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "label": "Purchase Taxes and Charges Template",
    "options": "Purchase Taxes and Charges Template",
    "permlevel": 1
@@ -93,6 +95,7 @@
    "description": "For the automatically created Inter-Company Sales Order",
    "fieldname": "sales_tax_template",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "label": "Sales Taxes and Charges Template",
    "options": "Sales Taxes and Charges Template",
    "permlevel": 1
@@ -111,7 +114,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-05-11 16:54:45.907670",
+ "modified": "2025-05-16 23:06:06.855157",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Impex Settings",
