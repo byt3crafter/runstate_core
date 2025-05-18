@@ -4,8 +4,7 @@
 	  <div class="row mb-3">
 		<div class="col-md-6">
 		  <p><strong>Item Code:</strong> {{ item_code }}</p>
-		  <p><strong>Description:</strong> {{ description }}</p>
-		  <p><strong>Item Group:</strong> {{ item_group }}</p>
+		  <p><strong>Description:</strong> {{ item_name }}</p>
 		</div>
 		<div class="col-md-6">
 		  <p><strong>Supplier:</strong> {{ supplier }}</p>
@@ -38,12 +37,6 @@
 			</tr>
 		  </thead>
 		  <tbody>
-			<tr>
-				<th>B/O Sales:</th>
-				<td v-for="company in user_companies" :key="company">
-					{{ companies_details[company].bo_sales }}
-				</td>
-			</tr>
 			<tr>
 				<th>B/O Purch:</th>
 				<td v-for="company in user_companies" :key="company">
@@ -147,6 +140,7 @@
 	  return {
 		item_code: "",
 		description: "",
+		item_name: "",
 		item_group: "",
 		supplier: "",
 		bin_location: "",

@@ -11,6 +11,8 @@
   "update_sales_orders_prices",
   "column_break_ugrdt",
   "update_item_prices",
+  "section_item_details",
+  "item_details_buying_price_list",
   "section_purichase_order_generator",
   "create_sales_order",
   "main_company",
@@ -109,12 +111,24 @@
    "fieldname": "update_item_prices",
    "fieldtype": "Button",
    "label": "Update Item Prices"
+  },
+  {
+   "fieldname": "section_item_details",
+   "fieldtype": "Section Break",
+   "label": "Item Details Settings"
+  },
+  {
+   "fieldname": "item_details_buying_price_list",
+   "fieldtype": "Link",
+   "label": "Item Details Cost Price List",
+   "options": "Price List",
+   "permlevel": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-05-16 23:06:06.855157",
+ "modified": "2025-05-18 03:29:10.768170",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Impex Settings",
