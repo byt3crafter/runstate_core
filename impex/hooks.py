@@ -31,7 +31,8 @@ app_include_js = ["impex.bundle.js"]
 # include js in doctype views
 doctype_js = {
 	"Purchase Invoice": "public/js/purchase_invoice.js",
-	"Item": "public/js/item.js"
+	"Item": "public/js/item.js",
+	"Stock Reconciliation": "public/js/stock_reconciliation.js"
 }
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
@@ -116,7 +117,8 @@ has_permission = {
 # Override standard doctype classes
 
 override_doctype_class = {
-    "Sales Order": "impex.extends.sales_order.CustomSalesOrder"
+    "Sales Order": "impex.extends.sales_order.CustomSalesOrder",
+    "Stock Reconciliation": "impex.extends.stock_reconciliation.CustomStockReconciliation"
 }
 
 # Document Events
@@ -304,7 +306,10 @@ fixtures = [
                     "Purchase Order-custom_create_sales_order",
                     "Item Supplier-custom_preffered_supplier",
                     "Purchase Receipt-custom_inter_company_invoice_reference",
-                    "Purchase Receipt Item-custom_delivery_note"
+                    "Purchase Receipt Item-custom_delivery_note",
+                    "Item-custom_section_stock_freezing",
+                    "Item-custom_stock_frozen_for_warehouse",
+					"Stock Reconciliation-custom_remove_items_with_no_change"
                 ],
             ]
         ],
