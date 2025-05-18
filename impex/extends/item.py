@@ -120,7 +120,7 @@ def get_item_details(item_code):
 		"bin_location": bin_location,
 		"total_sold": get_sold(item_code, user_company),
 		"total_purchased": get_purchased(item_code, user_company),
-		"current_stock": get_stock_balance(item_code, user_company),
+		"current_stock": get_company_balance(item_code, user_company),
 		"cost": cost,
 		"selling_prices": get_selling_prices(item_code, user_company, cost),
 		"company_details": get_company_item_details(item_code, user_company),
@@ -184,29 +184,26 @@ def get_purchased(item_code, user_company):
 		total_purchased = purchased[0].total_qty
 	return total_purchased
 
-def get_stock_balance(item_code, user_company):
+def get_company_balance(item_code, user_company):
 	# Get stock balance for all warehouses
 	stock_balance = 0
 	warehouses = frappe.db.get_all("Warehouse", filters={"company": user_company, "is_group": 0}, fields=["name"])
 	for warehouse in warehouses:
-		stock_balance += get_stock_balance(item_code, warehouse)
+		stock_balance += get_stock_balance(item_code, warehouse.name)
 	return stock_balance
 
 def get_cost(item_code, user_company):
-	valuation_rate = 0
-	no_of_values = 0
-	warehouses = frappe.db.get_all("Warehouse", filters={"company": user_company, "is_group": 0}, fields=["name"])
+	item_cost = 0
 
-	for warehouse in warehouses:
-		warehouse_valuation_rate = get_valuation_rate(item_code, warehouse, "Item", item_code, True)
-		if warehouse_valuation_rate and warehouse_valuation_rate > 0:
-			valuation_rate += warehouse_valuation_rate
-			no_of_values += 1
+	price_list = frappe.db.get_single_value("Impex Settings", "item_details_buying_price_list")
 
-	if no_of_values > 0:
-		valuation_rate = valuation_rate / no_of_values
+	if price_list and price_list != "":
+		buying_cost = frappe.db.get_value("Item Price", 
+							{"item_code": item_code, "price_list": price_list}, "price_list_rate")
+		if buying_cost and buying_cost != "":
+			item_cost = buying_cost
 	
-	return valuation_rate
+	return item_cost
 
 def get_selling_prices(item_code, user_company, cost=0):
 	price_lists = []
@@ -253,7 +250,7 @@ def get_company_item_details(item_code, user_company):
 	for company in companies:
 		bo_sales = get_ordered(item_code, company) or 0
 		bo_purchase = get_expected(item_code, company) or 0
-		in_stock = get_stock_balance(item_code, user_company)
+		in_stock = get_company_balance(item_code, company)
 		four_months_average = get_four_months_average(item_code, company)
 		twelve_months_sales = get_twelve_months_sales(item_code, company)
 		companies_details[company] = {
