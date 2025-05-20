@@ -32,9 +32,7 @@ class CustomStockReconciliation(StockReconciliation):
 			self.make_batches("warehouse")
 
 	def on_update(self):
-		frappe.msgprint("In here 1")
 		if self._action != "submit":
-			frappe.msgprint("In here 2")
 			self.freeze_stock()
 
 	def on_submit(self):

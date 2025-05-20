@@ -14,6 +14,13 @@ def autoname(doc, method):
 			doc.name = f"{naming_series}{getseries(naming_series, 4)}"
 
 def on_submit(doc, method):
+	# Impex Customization: Check to see if any of the items are frozen
+	for item in doc.items:
+		is_frozen = frappe.db.exists("Item Stock Freeze", 
+							{"parent": item.item_code, "warehouse": item.warehouse})
+		if is_frozen:
+			frappe.throw(f"""Error: Item {item.item_code} is currently being reconciled. 
+				No transaction can be made against it.""")
 	if doc.is_pos:
 		rename_invoice(doc)
 
