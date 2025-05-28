@@ -1,10 +1,23 @@
 // Copyright (c) 2024, Yousef Restom and contributors
 // For license information, please see license.txt
 
+let main_company = null;
 frappe.ui.form.on("Purchase Order Generator", {
   onload: function(frm) {
     if(frm.doc.__islocal){
-		frm.trigger('check_po_in_draft');
+		frappe.call({
+			method: "frappe.client.get_value",
+			args: {
+				doctype: "Impex Settings",
+				fieldname: "main_company"
+			},
+			callback: function(r) {
+				if (r.message.main_company) {
+					main_company = r.message.main_company;
+					frm.trigger("company");
+				}
+			}
+		});
 	}
   },
 
@@ -20,7 +33,15 @@ frappe.ui.form.on("Purchase Order Generator", {
   },
 
   company: function(frm) {
-	frm.trigger('check_po_in_draft');
+	if(frm.doc.company && frm.doc.company == main_company){
+		frm.set_value("inter_company_purchase", 0);
+		frm.set_value("orders_in_draft", 1);
+		frm.trigger('check_po_in_draft');
+	}
+	else{
+		frm.set_value("inter_company_purchase", 1);
+		frm.set_value("orders_in_draft", 0);
+	}
   },
 
   check_po_in_draft: function(frm) {
