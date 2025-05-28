@@ -13,6 +13,8 @@
   "update_item_prices",
   "section_item_details",
   "item_details_buying_price_list",
+  "column_break_afajp",
+  "item_details_buying_price_list_branches",
   "section_purichase_order_generator",
   "create_sales_order",
   "main_company",
@@ -120,15 +122,25 @@
   {
    "fieldname": "item_details_buying_price_list",
    "fieldtype": "Link",
-   "label": "Item Details Cost Price List",
+   "label": "Item Details Cost Price List for Main Branch",
    "options": "Price List",
    "permlevel": 1
+  },
+  {
+   "fieldname": "column_break_afajp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "item_details_buying_price_list_branches",
+   "fieldtype": "Link",
+   "label": "Item Details Cost Price List for Branches",
+   "options": "Price List"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-05-18 03:29:10.768170",
+ "modified": "2025-05-28 12:06:29.363170",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Impex Settings",
