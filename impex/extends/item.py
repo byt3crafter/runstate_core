@@ -194,8 +194,13 @@ def get_company_balance(item_code, user_company):
 
 def get_cost(item_code, user_company):
 	item_cost = 0
+	main_company = frappe.db.get_single_value("Impex Settings", "main_company")
 
-	price_list = frappe.db.get_single_value("Impex Settings", "item_details_buying_price_list")
+	if user_company == main_company:
+		price_list = frappe.db.get_single_value("Impex Settings", "item_details_buying_price_list")
+	else:
+		price_list = frappe.db.get_single_value("Impex Settings", "item_details_buying_price_list_branches")
+
 
 	if price_list and price_list != "":
 		buying_cost = frappe.db.get_value("Item Price", 
