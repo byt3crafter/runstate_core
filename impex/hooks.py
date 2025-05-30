@@ -31,7 +31,8 @@ app_include_js = ["impex.bundle.js"]
 # include js in doctype views
 doctype_js = {
 	"Purchase Invoice": "public/js/purchase_invoice.js",
-	"Item": "public/js/item.js"
+	"Item": "public/js/item.js",
+	"Purchase Order": "public/js/purchase_order.js"
 }
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
