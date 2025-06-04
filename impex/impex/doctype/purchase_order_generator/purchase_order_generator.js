@@ -6,14 +6,11 @@ frappe.ui.form.on("Purchase Order Generator", {
   onload: function(frm) {
     if(frm.doc.__islocal){
 		frappe.call({
-			method: "frappe.client.get_value",
-			args: {
-				doctype: "Impex Settings",
-				fieldname: "main_company"
-			},
+			method: "impex.impex.doctype.purchase_order_generator.purchase_order_generator.get_main_company",
 			callback: function(r) {
-				if (r.message.main_company) {
-					main_company = r.message.main_company;
+				console.log("Main company: ", r.message);
+				if (r.message) {
+					main_company = r.message;
 					frm.trigger("company");
 				}
 			}
