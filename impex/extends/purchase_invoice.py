@@ -10,28 +10,30 @@ def on_submit(doc, method):
 
 
 def update_supplier_price_list(doc):
-    # Ensure the buying_price_list field is set
-    if doc.buying_price_list:
-        for item in doc.items:
-            # Check if the item exists in the Price List
-            price_list_item_name = frappe.db.exists(
-                "Item Price",
-                {"item_code": item.item_code, "price_list": doc.buying_price_list},
-            )
-
-            if price_list_item_name:
-                # Update the existing item price
-                price_list_item = frappe.get_doc("Item Price", price_list_item_name)
-                price_list_item.price_list_rate = item.rate
-                price_list_item.save()
-            else:
-                # Create a new Item Price
-                new_price_list_item = frappe.get_doc(
-                    {
-                        "doctype": "Item Price",
-                        "price_list": doc.buying_price_list,
-                        "item_code": item.item_code,
-                        "price_list_rate": item.rate,
-                    }
+    main_company = frappe.db.get_single_value("Impex Settings", "main_company")
+    if doc.company == main_company:
+        # Ensure the buying_price_list field is set
+        if doc.buying_price_list:
+            for item in doc.items:
+                # Check if the item exists in the Price List
+                price_list_item_name = frappe.db.exists(
+                    "Item Price",
+                    {"item_code": item.item_code, "price_list": doc.buying_price_list},
                 )
-                new_price_list_item.insert()
+
+                if price_list_item_name:
+                    # Update the existing item price
+                    price_list_item = frappe.get_doc("Item Price", price_list_item_name)
+                    price_list_item.price_list_rate = item.rate
+                    price_list_item.save()
+                else:
+                    # Create a new Item Price
+                    new_price_list_item = frappe.get_doc(
+                        {
+                            "doctype": "Item Price",
+                            "price_list": doc.buying_price_list,
+                            "item_code": item.item_code,
+                            "price_list_rate": item.rate,
+                        }
+                    )
+                    new_price_list_item.insert()
