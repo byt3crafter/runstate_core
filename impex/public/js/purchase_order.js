@@ -2,12 +2,13 @@ let main_company = null;
 
 frappe.ui.form.on("Purchase Order", {
 	onload: function(frm){
-		frappe.db.get_single_value("Impex Settings", "main_company")
-			.then(value => {
-				main_company = value;
-				console.log("Main: ", main_company);
-				frm.trigger("company");
-			});
+		if(frm.doc.__islocal){
+			frappe.db.get_single_value("Impex Settings", "main_company")
+				.then(value => {
+					main_company = value;
+					frm.trigger("company");
+				});
+		}
 	},
 
 	company: function(frm){
