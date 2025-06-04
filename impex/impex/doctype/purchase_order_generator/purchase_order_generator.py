@@ -698,3 +698,8 @@ def get_item_suppliers(doctype, txt, searchfield, start, page_len, filters):
             WHERE
                 item.parent = %(item_code)s AND supplier.name LIKE %(supplier)s
             """, {"item_code": item_code, "supplier": '%' + txt + '%'})
+
+@frappe.whitelist()
+def get_main_company():
+    main_company = frappe.db.get_single_value("Impex Settings", "main_company")
+    return main_company
