@@ -15,7 +15,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Tools",
-   "link_count": 3,
+   "link_count": 4,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -49,9 +49,19 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Last Purchase Rate Update Tool",
+   "link_count": 0,
+   "link_to": "Last Purchase Rate Update Tool",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2025-03-30 22:44:11.512158",
+ "modified": "2025-06-06 15:37:22.894035",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Impex",
