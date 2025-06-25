@@ -637,7 +637,8 @@ def create_sales_order(purchase_orders):
         so.update({
             "company": company,
             "customer": customer,
-            "transaction_date": now_datetime()
+            "transaction_date": now_datetime(),
+            "set_warehouse": warehouse
         })
         
         if price_list and price_list != "":

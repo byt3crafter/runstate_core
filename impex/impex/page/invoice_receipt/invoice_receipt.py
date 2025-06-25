@@ -151,13 +151,20 @@ def get_delivery_note_items(invoice):
 	if undelivered_items:
 		delivery_note = frappe.get_doc({
 			"doctype": "Delivery Note",
+			"company": invoice.company,
 			"customer": invoice.customer,
 			"posting_date": now_datetime(),
+			"currency": invoice.currency,
+			"selling_price_list": invoice.selling_price_list,
 			"items": [{
 				"item_code": item.item_code,
 				"qty": item.qty,
+				"rate": item.rate,
+				"warehouse": item.warehouse,
+				"cost_center": item.cost_center,
+				"project": item.project,
 				"against_sales_invoice": invoice.name,
-				"si_detail": item.name
+				"si_detail": item.name,
 			} for item in undelivered_items]
 		})
 		delivery_note.insert()
