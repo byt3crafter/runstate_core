@@ -10,6 +10,7 @@
   "company",
   "default_warehouse",
   "company_customer",
+  "company_supplier",
   "tax_template",
   "po_in_draft",
   "disable_selling_prive_validation"
@@ -58,18 +59,28 @@
    "label": "Disable Selling Price Validation"
   },
   {
+   "columns": 1,
    "fieldname": "tax_template",
    "fieldtype": "Link",
    "ignore_user_permissions": 1,
    "in_list_view": 1,
    "label": "Purchase Taxes and Charges Template",
    "options": "Purchase Taxes and Charges Template"
+  },
+  {
+   "columns": 1,
+   "fieldname": "company_supplier",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company Supplier",
+   "options": "Supplier",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-05-16 23:11:10.049054",
+ "modified": "2025-07-03 01:19:10.169301",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Impex Company Settings",
