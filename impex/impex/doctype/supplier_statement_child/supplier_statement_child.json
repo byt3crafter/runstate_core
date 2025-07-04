@@ -1,0 +1,89 @@
+{
+ "creation": "2021-06-25 18:41:58.392563",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "date",
+  "doc_type",
+  "doc_no",
+  "supplier_so",
+  "supplier_currency",
+  "invoice_amount",
+  "debit_note",
+  "balance",
+  "due_date"
+ ],
+ "fields": [
+  {
+   "columns": 1,
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date"
+  },
+  {
+   "columns": 2,
+   "fieldname": "doc_type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Doc Type"
+  },
+  {
+   "columns": 1,
+   "fieldname": "doc_no",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Doc No",
+   "options": "Purchase Invoice"
+  },
+  {
+   "fieldname": "supplier_so",
+   "fieldtype": "Data",
+   "label": "Vendor Inv"
+  },
+  {
+   "fieldname": "supplier_currency",
+   "fieldtype": "Link",
+   "label": "Supplier Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "invoice_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Invoice Amount",
+   "options": "supplier_currency",
+   "print_hide_if_no_value": 1
+  },
+  {
+   "fieldname": "debit_note",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Debit Note",
+   "options": "supplier_currency",
+   "print_hide_if_no_value": 1
+  },
+  {
+   "fieldname": "balance",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Balance",
+   "options": "supplier_currency"
+  },
+  {
+   "fieldname": "due_date",
+   "fieldtype": "Date",
+   "label": "Due Date"
+  }
+ ],
+ "istable": 1,
+ "modified": "2021-10-12 17:52:00.376462",
+ "modified_by": "Administrator",
+ "module": "Impex",
+ "name": "Supplier Statement Child",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

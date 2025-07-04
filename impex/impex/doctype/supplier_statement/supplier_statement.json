@@ -1,0 +1,155 @@
+{
+ "creation": "2021-06-25 18:44:24.243908",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "supplier",
+  "supplier_currency",
+  "get_data",
+  "column_break_5",
+  "posting_date",
+  "tax_id",
+  "payment_terms",
+  "section_break_9",
+  "invoice_list",
+  "supplier_ageing_section",
+  "days_120",
+  "days_90",
+  "days_60",
+  "days_30",
+  "column_break_17",
+  "current_amount",
+  "total_amount"
+ ],
+ "fields": [
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Supplier",
+   "options": "Supplier",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "supplier.default_currency",
+   "fieldname": "supplier_currency",
+   "fieldtype": "Link",
+   "label": "Supplier Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "get_data",
+   "fieldtype": "Button",
+   "label": "Get Data",
+   "options": "get_data"
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Posting Date",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "supplier.tax_id",
+   "fieldname": "tax_id",
+   "fieldtype": "Data",
+   "label": "Tax ID"
+  },
+  {
+   "fetch_from": "supplier.payment_terms",
+   "fieldname": "payment_terms",
+   "fieldtype": "Data",
+   "label": "Payment Terms"
+  },
+  {
+   "fieldname": "section_break_9",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "invoice_list",
+   "fieldtype": "Table",
+   "label": "Invoice List",
+   "options": "Supplier Statement Child"
+  },
+  {
+   "fieldname": "supplier_ageing_section",
+   "fieldtype": "Section Break",
+   "label": "Supplier Ageing"
+  },
+  {
+   "fieldname": "days_120",
+   "fieldtype": "Currency",
+   "label": "> 120 Days",
+   "options": "supplier_currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "days_90",
+   "fieldtype": "Currency",
+   "label": "90 - 120 Days",
+   "options": "supplier_currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "days_60",
+   "fieldtype": "Currency",
+   "label": "60 - 90 Days",
+   "options": "supplier_currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "days_30",
+   "fieldtype": "Currency",
+   "label": "30 - 60 Days",
+   "options": "supplier_currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_17",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "current_amount",
+   "fieldtype": "Currency",
+   "label": "Current Amount",
+   "options": "supplier_currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_amount",
+   "fieldtype": "Currency",
+   "label": "Total Amount",
+   "options": "supplier_currency",
+   "read_only": 1
+  }
+ ],
+ "modified": "2021-06-28 04:39:47.474567",
+ "modified_by": "Administrator",
+ "module": "Impex",
+ "name": "Supplier Statement",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
