@@ -26,7 +26,7 @@ class SupplierStatement(Document):
 
 		# ambil data SINV -
 		get_sinv = frappe.db.sql("""
-			SELECT sinv.`name`, sinv.`is_return`, sinv.`posting_date`, sinv.`due_date`, sinv.`outstanding_amount`, sinv.`vendor_inv_no`
+			SELECT sinv.`name`, sinv.`is_return`, sinv.`posting_date`, sinv.`due_date`, sinv.`outstanding_amount`
 				, DATEDIFF(sinv.`due_date`, CURDATE()), sinv.`currency`, sinv.grand_total
 			FROM `tabPurchase Invoice` sinv
 			LEFT JOIN `tabPurchase Invoice` pinv ON sinv.return_against = pinv.name AND pinv.outstanding_amount > 0
@@ -55,7 +55,6 @@ class SupplierStatement(Document):
 				child = self.append("invoice_list", {})
 				child.date = i.posting_date
 				child.doc_no = i.name
-				child.supplier_so = i.vendor_inv_no
 				
 				if i.is_return == 0 :
 					child.doc_type = "Purchase Invoice"
