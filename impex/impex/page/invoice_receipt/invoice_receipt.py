@@ -20,10 +20,13 @@ def get_invoices(company):
 			`tabSales Invoice` si
 		INNER JOIN 
 			`tabSales Invoice Item` sii ON si.name = sii.parent
+		INNER JOIN
+			`tabPurchase Order` po ON po.name = sii.custom_branch_purchase_order
 		WHERE 
 			si.docstatus = 1 AND si.customer = %(customer)s AND 
 			(si.custom_receipt_status IS NULL OR si.custom_receipt_status = '')
 			AND (sii.custom_branch_purchase_order IS NOT NULL AND sii.custom_branch_purchase_order != '')
+			AND po.status <> 'Closed'
 	"""
 	items = frappe.db.sql(query, {"customer": customer}, as_dict=True)
 	invoice_items = {}
