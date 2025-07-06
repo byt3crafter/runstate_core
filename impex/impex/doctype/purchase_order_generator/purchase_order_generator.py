@@ -638,7 +638,8 @@ def create_sales_order(purchase_orders):
             "company": company,
             "customer": customer,
             "transaction_date": now_datetime(),
-            "set_warehouse": warehouse
+            "set_warehouse": warehouse,
+            "custom_branch_purchase_order": po.name
         })
         
         if price_list and price_list != "":
