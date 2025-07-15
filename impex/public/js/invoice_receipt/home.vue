@@ -64,11 +64,10 @@
 			  <p class="fw-bold">{{ item.qty }}</p>
 			</div>
 		  </div>
+		  <button @click="confirmReceipt" class="btn btn-primary d-block mx-auto mt-4">
+				Confirm Items Receipt
+		  </button>
 		</div>
-
-		<button @click="confirmReceipt" class="btn btn-primary d-block mx-auto mt-4">
-			Confirm Items Receipt
-		</button>
 	  </div>
 	</div>
   </template>

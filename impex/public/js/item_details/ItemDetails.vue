@@ -30,7 +30,7 @@
 	  <!-- Summary Table -->
 	  <div class="table-responsive mb-4">
 		<table class="table table-bordered text-center">
-		  <thead class="table-light">
+		  <thead>
 			<tr>
 			  <th>Company</th>
 			  <th v-for="company in user_companies" :key="company">{{ company }}</th>
@@ -68,7 +68,7 @@
 	  <!-- Monthly Sales Table -->
 	  <div class="table-responsive mb-4">
 		<table class="table table-bordered text-center">
-		  <thead class="table-light">
+		  <thead>
 			<tr>
 			  <th>Months</th>
 			  <th v-for="(value, key) in monthlySales" :key="key">{{ key }}</th>
@@ -95,7 +95,7 @@
 		<div class="col-md-8">
 			<div class="table-responsive cost-history-container">
 				<table class="table table-bordered text-center">
-					<thead class="table-light sticky-header">
+					<thead>
 					<tr>
 						<th>Cost</th>
 						<th>Supplier</th>
@@ -246,7 +246,6 @@
   .sticky-header {
 	position: sticky;
 	top: 0;
-	background: white;
 	z-index: 1;
   }
 </style>

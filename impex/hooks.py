@@ -311,7 +311,8 @@ fixtures = [
                     "Purchase Receipt Item-custom_delivery_note",
                     "Item-custom_section_stock_freezing",
                     "Item-custom_stock_frozen_for_warehouse",
-					"Stock Reconciliation-custom_remove_items_with_no_change"
+                    "Stock Reconciliation-custom_remove_items_with_no_change",
+                    "Sales Order-custom_branch_purchase_order"
                 ],
             ]
         ],
