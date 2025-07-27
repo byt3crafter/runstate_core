@@ -120,7 +120,8 @@ has_permission = {
 
 override_doctype_class = {
     "Sales Order": "impex.extends.sales_order.CustomSalesOrder",
-    "Stock Reconciliation": "impex.extends.stock_reconciliation.CustomStockReconciliation"
+    "Stock Reconciliation": "impex.extends.stock_reconciliation.CustomStockReconciliation",
+    "Item Group": "impex.extends.item_group.CustomItemGroup"
 }
 
 # Document Events
