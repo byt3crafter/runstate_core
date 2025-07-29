@@ -86,6 +86,7 @@
    "label": "Items"
   },
   {
+   "allow_bulk_edit": 1,
    "fieldname": "items",
    "fieldtype": "Table",
    "label": "Items",
@@ -138,7 +139,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-05-28 15:59:37.587179",
+ "modified": "2025-07-27 22:16:29.001202",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Purchase Order Generator",
