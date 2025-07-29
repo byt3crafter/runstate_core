@@ -24,7 +24,9 @@
   "main_company_price_list",
   "tax_template",
   "default_settings_section",
-  "default_company_settings"
+  "default_company_settings",
+  "section_break_d6t7y",
+  "automatic_rules"
  ],
  "fields": [
   {
@@ -135,12 +137,22 @@
    "fieldtype": "Link",
    "label": "Item Details Cost Price List for Branches",
    "options": "Price List"
+  },
+  {
+   "fieldname": "section_break_d6t7y",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "automatic_rules",
+   "fieldtype": "Table",
+   "label": "Automatically Added Price Rules",
+   "options": "Impex Settings Automatic Rule"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-05-28 12:06:29.363170",
+ "modified": "2025-07-26 16:33:48.431773",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Impex Settings",

@@ -1,0 +1,59 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-07-26 16:22:38.685464",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "document",
+  "price_list",
+  "margin",
+  "base_price_list"
+ ],
+ "fields": [
+  {
+   "fieldname": "document",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Document",
+   "options": "Item Group\nSupplier",
+   "reqd": 1
+  },
+  {
+   "fieldname": "price_list",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Price List",
+   "options": "Price List",
+   "reqd": 1
+  },
+  {
+   "fieldname": "margin",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Margin",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "fieldname": "base_price_list",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Based on Price List",
+   "options": "Price List"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-07-26 16:28:55.104695",
+ "modified_by": "Administrator",
+ "module": "Impex",
+ "name": "Impex Settings Automatic Rule",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

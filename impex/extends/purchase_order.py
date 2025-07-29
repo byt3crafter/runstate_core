@@ -1,7 +1,7 @@
 import frappe
 from frappe import _
 from impex.impex.doctype.purchase_order_generator.purchase_order_generator import create_sales_order
-
+from impex.impex.doctype.price_change.price_change import create_price_change_from_purchase_invoice
 
 def validate(doc, method):
     set_part_number(doc)
@@ -82,3 +82,21 @@ def add_part_number(doc):
         #         supplier_item.supplier_part_no = item.custom_part_number
         #         # Save the updated entry, bypassing permission checks
         #         supplier_item.save(ignore_permissions=True)
+
+@frappe.whitelist()
+def recreate_manual_price_change(docname, doctype="Purchase Order"):
+    fieldname = "purchase_order"
+    if doctype == "Purchase Invoice":
+        fieldname = "purchase_invoice"
+    
+    existing = frappe.db.get_all("Price Change", filters={fieldname: docname}, fields=["name", "docstatus"])
+    if existing and len(existing) > 0:
+        for row in existing:
+            if row.docstatus == 1:
+                url = frappe.utils.get_url_to_form("Price Change", row.name)
+                frappe.throw(f"""Error: Please cancel Price Change <a href='{url}'>{row.name}</a> first""")
+            
+            if row.docstatus == 0:
+                frappe.delete_doc("Price Change", row.name)
+    create_price_change_from_purchase_invoice(doctype=doctype, doc_name=docname)
+    

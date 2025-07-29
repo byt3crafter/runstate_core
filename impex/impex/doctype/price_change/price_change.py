@@ -804,3 +804,45 @@ def recalculate_zero_rated_item_prices():
                 frappe.msgprint(
                     f"Price Change Created for {group_key}: <a href='{url}'>{price_change_doc.name}</a>"
                 )
+
+def add_auto_price_rules(doctype, docname):
+    rule_exists = frappe.db.exists("Impex Settings Automatic Rule", {"document": doctype})
+    if rule_exists:
+        all_rules = frappe.db.get_all("Impex Settings Automatic Rule", 
+                        filters={"document": doctype},
+                        fields=["price_list", "margin", "base_price_list", "name"])
+        
+        # Get parent document to properly manage idx values
+        doc = frappe.get_doc(doctype, docname)
+        existing_rules = len(doc.rule_prices) if hasattr(doc, 'rule_prices') else 0
+        
+        for rule in all_rules:
+            exists = frappe.db.exists(
+                "Rule Prices", 
+                {"parent": docname, "parenttype": doctype, "price_list": rule.price_list}
+            )
+    
+            if exists:
+                # Update existing rule
+                frappe.db.set_value(
+                    "Rule Prices", 
+                    exists, 
+                    {
+                        "margin": rule.margin,
+                        "base_price_list": rule.base_price_list
+                    }
+                )
+            else:
+                # Create new rule
+                new_rule = frappe.get_doc({
+                    "doctype": "Rule Prices",
+                    "parenttype": doctype,
+                    "parent": docname,
+                    "parentfield": "rule_prices",
+                    "price_list": rule.price_list,
+                    "margin": rule.margin,
+                    "base_price_list": rule.base_price_list,
+                    "idx": existing_rules + 1
+                })
+                new_rule.insert(ignore_permissions=True)
+    
