@@ -9,6 +9,22 @@ frappe.ui.form.on("Purchase Order", {
 					frm.trigger("company");
 				});
 		}
+
+		if(frm.doc.docstatus == 1){
+			frm.add_custom_button(__("Create Price Change"), () => {
+				frappe.call({
+					method: "impex.extends.purchase_order.recreate_manual_price_change",
+					args: {
+						doctype: frm.doc.doctype,
+						docname: frm.doc.name
+					},
+					freeze: true,
+					callback: function(ret){
+
+					}
+				});
+			});
+		}
 	},
 
 	company: function(frm){
