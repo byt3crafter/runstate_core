@@ -78,7 +78,7 @@ def confirm_receipt(invoices):
 					supplier_pos[supplier][po.name] = set()
 				
 				supplier_pos[supplier][po.name].add(
-					(row.item_code, row.custom_branch_purchase_order_item, row.qty, row.name)
+					(row.item_code, row.custom_branch_purchase_order_item, row.qty, row.uom, row.name)
 				)
 
 		# Create one Purchase Receipt per supplier
@@ -100,10 +100,11 @@ def confirm_receipt(invoices):
 			# Add items from all POs for this supplier
 			for po, items in purchase_orders.items():
 				po_doc = frappe.get_doc("Purchase Order", po)
-				for item_code, po_item, qty, name in items:
+				for item_code, po_item, qty, uom, name in items:
 					receipt_doc.append("items", {
 						"item_code": item_code,
 						"qty": qty,
+						"uom": uom,
 						"purchase_order": po,
 						"purchase_order_item": po_item,
 						"custom_delivery_note": delivery_note_items[name]['parent'],
