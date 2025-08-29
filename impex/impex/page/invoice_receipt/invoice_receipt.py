@@ -229,3 +229,16 @@ def get_delivery_notes(invoice):
 		delivery_note.submit()
 		delivery_notes.append(delivery_note)
 	return delivery_notes
+
+@frappe.whitelist()
+def can_select_multiple_invoices():
+	"""
+	Check if the logged-in user has the role specified in the 'multiple_receipt_role' field of 'Impex Settings'.
+	"""
+	multiple_receipt_role = frappe.db.get_single_value("Impex Settings", "multiple_receipt_role")
+	
+	if not multiple_receipt_role:
+		return False
+
+	user_roles = frappe.get_roles(frappe.session.user)
+	return multiple_receipt_role in user_roles

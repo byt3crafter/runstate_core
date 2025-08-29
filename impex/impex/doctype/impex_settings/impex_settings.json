@@ -26,7 +26,9 @@
   "default_settings_section",
   "default_company_settings",
   "section_break_d6t7y",
-  "automatic_rules"
+  "automatic_rules",
+  "invoice_receipt_page_section",
+  "multiple_receipt_role"
  ],
  "fields": [
   {
@@ -147,12 +149,23 @@
    "fieldtype": "Table",
    "label": "Automatically Added Price Rules",
    "options": "Impex Settings Automatic Rule"
+  },
+  {
+   "fieldname": "invoice_receipt_page_section",
+   "fieldtype": "Section Break",
+   "label": "Invoice Receipt Page"
+  },
+  {
+   "fieldname": "multiple_receipt_role",
+   "fieldtype": "Link",
+   "label": "Role Allowed to Receive Multiple Invoices",
+   "options": "Role"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-07-26 16:33:48.431773",
+ "modified": "2025-08-29 10:28:24.907545",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Impex Settings",
