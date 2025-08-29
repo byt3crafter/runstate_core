@@ -637,7 +637,7 @@ def create_sales_order(purchase_orders):
         so.update({
             "company": company,
             "customer": customer,
-            "transaction_date": now_datetime(),
+            "transaction_date": po.transaction_date,
             "set_warehouse": warehouse,
             "custom_branch_purchase_order": po.name
         })

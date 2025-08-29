@@ -4,14 +4,21 @@ import json
 from erpnext.buying.doctype.purchase_order.purchase_order import make_purchase_receipt
 
 @frappe.whitelist()
-def get_invoices(company):
+def get_invoices(company, from_date=None, to_date=None):
 	customer = ""
 	customer_exists = frappe.db.exists("Impex Company Settings", {"company": company})
 	if customer_exists:
 		customer = frappe.db.get_value("Impex Company Settings", customer_exists, "company_customer")
 	else:
 		frappe.throw(f"Error: The company {company} has not been setup for this function in Impex Settings. \
-			   Please contact your administrator.")
+			Please contact your administrator.")
+	
+	# Set default dates if not provided
+	if not from_date:
+		from_date = frappe.utils.today()
+	if not to_date:
+		to_date = frappe.utils.today()
+	
 	query = """
 		SELECT 
 			si.name AS invoice_name, sii.item_code, sii.item_name, 
@@ -24,11 +31,22 @@ def get_invoices(company):
 			`tabPurchase Order` po ON po.name = sii.custom_branch_purchase_order
 		WHERE 
 			si.docstatus = 1 AND si.customer = %(customer)s AND 
-			(si.custom_receipt_status IS NULL OR si.custom_receipt_status = '')
-			AND (sii.custom_branch_purchase_order IS NOT NULL AND sii.custom_branch_purchase_order != '')
-			AND po.status <> 'Closed'
+			(si.custom_receipt_status IS NULL OR si.custom_receipt_status = '') AND
+			(sii.custom_branch_purchase_order IS NOT NULL AND sii.custom_branch_purchase_order != '') AND
+			po.status <> 'Closed' AND
+			si.posting_date BETWEEN %(from_date)s AND %(to_date)s
 	"""
-	items = frappe.db.sql(query, {"customer": customer}, as_dict=True)
+	
+	items = frappe.db.sql(
+		query, 
+		{
+			"customer": customer,
+			"from_date": from_date,
+			"to_date": to_date
+		}, 
+		as_dict=True
+	)
+	
 	invoice_items = {}
 	invoices = []
 
@@ -48,6 +66,7 @@ def get_invoices(company):
 	# Add the quantity of items for each invoice
 	for invoice in invoices:
 		invoice.update({"item_qty": len(invoice_items.get(invoice["name"], []))})
+	
 	return {"invoices": invoices, "items": invoice_items}
 
 @frappe.whitelist()

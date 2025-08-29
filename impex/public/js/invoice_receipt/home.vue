@@ -2,12 +2,26 @@
 	<div class="section-body">
 	  <div class="frappe-card p-4">
 		<div class="d-flex align-items-center mb-4">
-		  <!-- <label class="me-3 fw-bold">Receiving Company</label> -->
-		  <!-- Container for the Frappe Link field -->
 		  <div class="w-25 me-3" ref="companyFieldContainer"></div>
+		  <div class="w-25 me-3" ref="fromDateContainer"></div>
+		  <div class="w-25 me-3" ref="toDateContainer"></div>
 		  <button @click="loadInvoices" class="btn btn-primary" style="margin-left: 25px;">Load Invoices</button>
 		</div>
 	  </div>
+
+	  <!-- Search Field -->
+	  <div v-if="invoices.length > 1" class="mb-4 search-container">
+		<div class="col-md-6">
+		  <input
+			v-model="searchQuery"
+			type="text"
+			class="form-control"
+			placeholder="Search Invoice"
+			@input="filterInvoices"
+		  />
+		</div>
+	  </div>
+
 	  <div class="row mt-4 initialy-hide">
 		<div class="col-md-6">
 		  <div class="frappe-card p-3">
@@ -20,7 +34,7 @@
 				</div>
 			</div>
 			<div
-			  v-for="invoice in invoices"
+			  v-for="invoice in filteredInvoices"
 			  :key="invoice.id"
 			  class="d-flex align-items-center"
 			  @click="selectInvoice(invoice.name)"
@@ -78,11 +92,17 @@
 	  return {
 		branch: "",
 		invoices: [],
+		filteredInvoices: [],
 		invoiceItems: {},
 		selectedInvoices: [],
 		items: [],
 		companyField: null,
-		selectedInvoice: ''
+		selectedInvoice: '',
+		fromDateField: null,
+		toDateField: null,
+		fromDate: frappe.datetime.get_today(),
+		toDate: frappe.datetime.get_today(),
+		searchQuery: '' // New property for the search query
 	  };
 	},
 	mounted() {
@@ -102,6 +122,36 @@
 		},
 		render_input: true
 	  });
+	  
+	  // From Date Picker
+	  this.fromDateField = frappe.ui.form.make_control({
+		parent: this.$refs.fromDateContainer,
+		df: {
+		  fieldname: "from_date",
+		  label: "From Date",
+		  fieldtype: "Date",
+		  default: me.fromDate,
+		  change: function(){
+			me.fromDate = me.fromDateField.get_value();
+		  }
+		},
+		render_input: true
+	  });
+	  
+	  // To Date Picker
+	  this.toDateField = frappe.ui.form.make_control({
+		parent: this.$refs.toDateContainer,
+		df: {
+		  fieldname: "to_date",
+		  label: "To Date",
+		  fieldtype: "Date",
+		  default: me.toDate,
+		  change: function(){
+			me.toDate = me.toDateField.get_value();
+		  }
+		},
+		render_input: true
+	  });
 	},
 	methods: {
 	  loadInvoices() {
@@ -109,12 +159,15 @@
 			method: "impex.impex.page.invoice_receipt.invoice_receipt.get_invoices",
 			freeze: true,
 			args: {
-				company: this.branch
+				company: this.branch,
+				from_date: this.fromDate,
+				to_date: this.toDate
 			},
 			callback: (response) => {
 				console.log("Response: ", response);
 				if (response.message) {
 					this.invoices = response.message.invoices;
+					this.filteredInvoices = this.invoices; // Initialize filteredInvoices
 					this.invoiceItems = response.message.items;
 					document.querySelectorAll('.initialy-hide').forEach(element => {
 						element.style.display = 'flex';
@@ -127,12 +180,6 @@
 		this.items = this.invoiceItems[invoiceName];
 	  },
 	  updateSelectedInvoices(invoiceName) {
-			// const index = this.selectedInvoices.indexOf(invoiceName);
-			// if (index > -1) {
-			// 	this.selectedInvoices.splice(index, 1);
-			// } else {
-			// 	this.selectedInvoices.push(invoiceName);
-			// }
 			this.selectedInvoice = invoiceName;
 	  },
 	  confirmReceipt() {
@@ -152,19 +199,18 @@
 				}
 			}
 		});
+	  },
+	  filterInvoices() {
+		const query = this.searchQuery.toLowerCase();
+		this.filteredInvoices = this.invoices.filter(invoice =>
+		  invoice.name.toLowerCase().includes(query)
+		);
 	  }
 	}
   };
   </script>
   
   <style>
-  /* .frappe-card {
-	background: #fff;
-	border: 1px solid #d1d8dd;
-	border-radius: 4px;
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  } */
-
   .list-group-item {
 	border-top: none;
 	border-right: none;
@@ -174,5 +220,12 @@
   .initialy-hide {
 	display: none;
   }
+
+  .search-container {
+	background-color: #ffffff; 
+	padding: 15px;
+	margin-top: 21px;
+	border-radius: 5px;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional: Add a subtle shadow */
+  }
   </style>
-  
