@@ -261,9 +261,12 @@ def verify_pick_list_exists(pick_list_name):
 def generate_pick_lists():
     """
     Generate pick lists for all pending sales orders, skipping already picked items without failing.
+    Log all created Pick Lists and Sales Orders in a single log entry.
     """
     print("\n=== Starting Pick List Generation ===")
     
+    log_rows = []  # Collect rows for the log table
+
     try:
         sales_orders = frappe.get_all(
             "Sales Order",
@@ -304,7 +307,7 @@ def generate_pick_lists():
                 continue
 
             # Process items in batches of 25
-            for i in range(0, len(items), 25):
+            for i in 0, len(items), 25:
                 items_batch = items[i:i + 25]
                 try:
                     print(f"\nCreating pick list for {len(items_batch)} items")
@@ -359,24 +362,24 @@ def generate_pick_lists():
                         print("\nSetting item locations...")
                         pick_list.set_item_locations()
                         
-                        print("\nPick List details before save:")
-                        print(f"Customer: {pick_list.customer}")
-                        print("Items:")
-                        for loc in pick_list.locations:
-                            print(f"- Item: {loc.item_code}, SO: {loc.sales_order}, Qty: {loc.qty}")
-                        
                         try:
                             print("\nAttempting to save pick list...")
-                            pick_list.flags.ignore_validate = True  # Try to bypass validation
-                            pick_list.flags.ignore_mandatory = True  # Skip mandatory field validation
+                            pick_list.flags.ignore_validate = True # Try to bypass validationist.flags.ignore
+                            pick_list.flags.ignore_mandatory = True # Skip mandatory field validationmandatoryignore_
                             pick_list.save(ignore_permissions=True)
                             print(f"Successfully saved pick list: {pick_list.name}")
                             
                             # Verify save was successful
-                            if frappe.db.exists("Pick List", pick_list.name):
-                                print(f"Verified pick list exists in database: {pick_list.name}")
-                            else:
-                                print(f"WARNING: Pick list may not have been saved properly")
+                            # if frappe.db.exists("Pick List", pick_list.name):
+                            #     print(f"Verified pick list exists in database: {pick_list.name}")
+                            # else:
+                            #     print(f"WARNING: Pick list may not have been saved properly")
+                            log_rows.append({
+                                "customer": customer,
+                                "sales_order": orders[0].name,
+                                "pick_list": pick_list.name,
+                                "status": "Success"
+                            })
                                 
                         except Exception as save_error:
                             print(f"Error during save: {str(save_error)}")
@@ -386,9 +389,21 @@ def generate_pick_lists():
                                 pick_list.insert(ignore_permissions=True)
                                 frappe.db.commit()
                                 print(f"Successfully saved pick list using alternative method: {pick_list.name}")
+                                
+                                log_rows.append({
+                                    "customer": customer,
+                                    "sales_order": orders[0].name,
+                                    "pick_list": pick_list.name,
+                                    "status": "Success"
+                                })
                             except Exception as alt_error:
+                                log_rows.append({
+                                    "customer": customer,
+                                    "sales_order": orders[0].name,
+                                    "status": "Failed",
+                                    "error_message": str(e)
+                                })
                                 print(f"Alternative save method also failed: {str(alt_error)}")
-                                raise
 
                 except Exception as e:
                     print(f"\nERROR creating pick list batch:")
@@ -407,6 +422,12 @@ def generate_pick_lists():
             "Pick list generation failed"
         )
     finally:
+        # Generate the log details and save them in a log entry
+        log_details = generate_log_details(log_rows)
+        frappe.get_doc({
+            "doctype": "Pick List Generation Log",
+            "log_details": log_details
+        }).insert(ignore_permissions=True)
         print("\n=== Pick List Generation Completed ===")
         frappe.msgprint("Pick list generation process completed")
 
@@ -608,3 +629,54 @@ Items updated: {', '.join(comment_items)}"""
         print("\nItems Processed (No Changes):")
         for item in items_processed:
             print(f"- {item['item_code']}: Current rate {item['rate']}")
+
+def generate_log_details(rows):
+    """
+    Generate the HTML log details for the Pick List Generation Log, including the header and rows.
+    :param rows: A list of dictionaries, where each dictionary represents a row with keys:
+                 - customer
+                 - sales_order
+                 - pick_list
+                 - status
+                 - error_message
+    :return: A string containing the complete HTML table with links to the Sales Order, Pick List, and Customer.
+    """
+    log_details = "<h3>Pick List Generation Log</h3>"
+    log_details += "<table style='border-collapse: collapse; width: 100%;'>"
+    log_details += "<tr style='background-color: #f2f2f2;'>"
+    log_details += "<th style='padding: 8px; border: 1px solid #ddd;'>Customer</th>"
+    log_details += "<th style='padding: 8px; border: 1px solid #ddd;'>Sales Order</th>"
+    log_details += "<th style='padding: 8px; border: 1px solid #ddd;'>Pick List</th>"
+    log_details += "<th style='padding: 8px; border: 1px solid #ddd;'>Status</th>"
+    log_details += "<th style='padding: 8px; border: 1px solid #ddd;'>Error Message</th>"
+    log_details += "</tr>"
+
+    for row in rows:
+        customer = row.get('customer', '')
+        sales_order = row.get('sales_order', '')
+        pick_list = row.get('pick_list', 'N/A')
+
+        # Generate links for Customer, Sales Order, and Pick List
+        customer_link = (
+            f"<a href='{frappe.utils.get_url_to_form('Customer', customer)}'>{customer}</a>"
+            if customer else ''
+        )
+        sales_order_link = (
+            f"<a href='{frappe.utils.get_url_to_form('Sales Order', sales_order)}'>{sales_order}</a>"
+            if sales_order else ''
+        )
+        pick_list_link = (
+            f"<a href='{frappe.utils.get_url_to_form('Pick List', pick_list)}'>{pick_list}</a>"
+            if pick_list != 'N/A' else 'N/A'
+        )
+
+        log_details += "<tr>"
+        log_details += f"<td style='padding: 8px; border: 1px solid #ddd;'>{customer_link}</td>"
+        log_details += f"<td style='padding: 8px; border: 1px solid #ddd;'>{sales_order_link}</td>"
+        log_details += f"<td style='padding: 8px; border: 1px solid #ddd;'>{pick_list_link}</td>"
+        log_details += f"<td style='padding: 8px; border: 1px solid #ddd;'>{row.get('status', 'Success')}</td>"
+        log_details += f"<td style='padding: 8px; border: 1px solid #ddd;'>{row.get('error_message', '')}</td>"
+        log_details += "</tr>"
+
+    log_details += "</table>"
+    return log_details

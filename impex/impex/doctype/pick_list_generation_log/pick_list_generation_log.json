@@ -1,0 +1,52 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-08-30 07:42:40.454650",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "log_date",
+  "log_details"
+ ],
+ "fields": [
+  {
+   "default": "Now",
+   "fieldname": "log_date",
+   "fieldtype": "Datetime",
+   "label": "Log Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "log_details",
+   "fieldtype": "Text Editor",
+   "label": "Log Details",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-08-30 13:42:09.849400",
+ "modified_by": "Administrator",
+ "module": "Impex",
+ "name": "Pick List Generation Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
