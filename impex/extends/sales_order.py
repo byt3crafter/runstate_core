@@ -448,6 +448,8 @@ def update_sales_orders_prices():
     """Update prices for all uncompleted sales orders"""
     print("Starting batch update of sales order prices")
     
+    all_log_rows = []  # Collect all changes across all orders
+    
     sales_orders = frappe.get_all(
         "Sales Order",
         filters={
@@ -464,7 +466,12 @@ def update_sales_orders_prices():
             print(f"\nProcessing Sales Order: {sales_order.name}")
             so = frappe.get_cached_doc("Sales Order", sales_order.name)
             print(f"SO Date: {so.transaction_date}, Customer: {so.customer}, Price List: {so.selling_price_list}")
-            update_sales_order_prices(so)
+            
+            # Collect changes from each order
+            log_rows = update_sales_order_prices(so)
+            if log_rows:
+                all_log_rows.extend(log_rows)
+                
         except Exception as e:
             print(f"Error processing SO {sales_order.name}: {str(e)}")
             frappe.log_error(
@@ -472,6 +479,16 @@ def update_sales_orders_prices():
                 f"Failed to update prices for Sales Order {sales_order.name}.",
             )
             frappe.db.rollback()
+    
+    # Create single log entry with all changes
+    if all_log_rows:
+        log_details = generate_price_update_log(all_log_rows)
+        frappe.get_doc({
+            "doctype": "Sales Order Price Update Log",
+            "log_details": log_details
+        }).insert(ignore_permissions=True)
+    
+    print("\n=== Price Update Completed ===")
 
 def get_latest_price_list_rate(item_code, price_list):
     """Get the latest price based on valid_from date"""
@@ -497,10 +514,9 @@ def update_sales_order_prices(so):
     """Update prices for a single sales order"""
     print(f"\nChecking prices for SO {so.name}")
     
+    log_rows = []
     there_is_a_change = False
     items_changed = []
-    items_processed = []
-    items_skipped = []
     
     for item in so.items:
         print(f"\nProcessing item: {item.item_code}")
@@ -510,9 +526,11 @@ def update_sales_order_prices(so):
         # Skip fully delivered items
         if flt(item.delivered_qty) >= flt(item.qty):
             print(f"Skipping {item.item_code} - Fully delivered")
-            items_skipped.append({
+            log_rows.append({
+                "sales_order": so.name,
                 "item_code": item.item_code,
-                "reason": "Fully delivered"
+                "status": "Skipped",
+                "error_message": "Fully delivered"
             })
             continue
         
@@ -559,18 +577,32 @@ def update_sales_order_prices(so):
                     "new_rate": flt(latest_price, 2),
                     "valid_from": valid_from
                 })
+                
+                # Add to log rows only if price was actually changed
+                log_rows.append({
+                    "sales_order": so.name,
+                    "item_code": item.item_code,
+                    "old_rate": flt(old_amount/item.qty, 2),
+                    "new_rate": flt(latest_price, 2),
+                    "valid_from": valid_from,
+                    "status": "Updated"
+                })
             else:
                 print(f"No price change needed for {item.item_code}")
-                items_processed.append({
+                log_rows.append({
+                    "sales_order": so.name,
                     "item_code": item.item_code,
-                    "rate": item.rate,
-                    "status": "No change needed"
+                    "old_rate": item.rate,
+                    "new_rate": item.rate,
+                    "status": "No Change"
                 })
         else:
             print(f"No price found in price list for {item.item_code}")
-            items_skipped.append({
+            log_rows.append({
+                "sales_order": so.name,
                 "item_code": item.item_code,
-                "reason": "No price found in price list"
+                "status": "Error",
+                "error_message": "No price found in price list"
             })
     
     if there_is_a_change:
@@ -603,32 +635,14 @@ Items updated: {', '.join(comment_items)}"""
             
             so.add_comment("Comment", comment_text)
             
-            print(f"Successfully updated SO {so.name}")
             frappe.db.commit()
             
         except Exception as e:
             print(f"Error updating SO {so.name}: {str(e)}")
             print(f"Items that were changed: {json.dumps(items_changed, indent=2)}")
             raise
-    else:
-        print(f"\nNo changes needed for SO {so.name}")
     
-    # Print summary for this SO
-    print("\nProcessing Summary:")
-    if items_changed:
-        print("\nItems Updated:")
-        for item in items_changed:
-            print(f"- {item['item_code']}: {item['old_rate']} -> {item['new_rate']} (Valid from: {item['valid_from']})")
-    
-    if items_skipped:
-        print("\nItems Skipped:")
-        for item in items_skipped:
-            print(f"- {item['item_code']}: {item['reason']}")
-    
-    if items_processed:
-        print("\nItems Processed (No Changes):")
-        for item in items_processed:
-            print(f"- {item['item_code']}: Current rate {item['rate']}")
+    return log_rows  # Return the log rows instead of creating a log
 
 def generate_log_details(rows):
     """
@@ -679,4 +693,57 @@ def generate_log_details(rows):
         log_details += "</tr>"
 
     log_details += "</table>"
+    return log_details
+
+def generate_price_update_log(rows):
+    """
+    Generate HTML log for Sales Order price updates, showing only actual changes.
+    :param rows: List of dictionaries containing update details
+    :return: HTML string containing formatted log table of changed prices
+    """
+    # Filter rows to only include actual price changes
+    changed_rows = [row for row in rows if row.get('status') == 'Updated']
+    
+    if not changed_rows:
+        return "<h3>Sales Order Price Update Log</h3><p>No prices were changed during this update.</p>"
+    
+    log_details = "<h3>Sales Order Price Update Log</h3>"
+    log_details += "<p>The following prices were updated:</p>"
+    log_details += "<table style='border-collapse: collapse; width: 100%;'>"
+    log_details += "<tr style='background-color: #f2f2f2;'>"
+    log_details += "<th style='padding: 8px; border: 1px solid #ddd;'>Sales Order</th>"
+    log_details += "<th style='padding: 8px; border: 1px solid #ddd;'>Item Code</th>"
+    log_details += "<th style='padding: 8px; border: 1px solid #ddd;'>Old Rate</th>"
+    log_details += "<th style='padding: 8px; border: 1px solid #ddd;'>New Rate</th>"
+    log_details += "<th style='padding: 8px; border: 1px solid #ddd;'>Valid From</th>"
+    log_details += "</tr>"
+
+    for row in changed_rows:
+        sales_order = row.get('sales_order', '')
+        item_code = row.get('item_code', '')
+        
+        # Generate link for Sales Order
+        sales_order_link = (
+            f"<a href='{frappe.utils.get_url_to_form('Sales Order', sales_order)}'>{sales_order}</a>"
+            if sales_order else ''
+        )
+        
+        # Generate link for Item
+        item_link = (
+            f"<a href='{frappe.utils.get_url_to_form('Item', item_code)}'>{item_code}</a>"
+            if item_code else ''
+        )
+
+        log_details += "<tr>"
+        log_details += f"<td style='padding: 8px; border: 1px solid #ddd;'>{sales_order_link}</td>"
+        log_details += f"<td style='padding: 8px; border: 1px solid #ddd;'>{item_link}</td>"
+        log_details += f"<td style='padding: 8px; border: 1px solid #ddd;'>{row.get('old_rate', 'N/A')}</td>"
+        log_details += f"<td style='padding: 8px; border: 1px solid #ddd;'>{row.get('new_rate', 'N/A')}</td>"
+        log_details += f"<td style='padding: 8px; border: 1px solid #ddd;'>{row.get('valid_from', 'N/A')}</td>"
+        log_details += "</tr>"
+
+    log_details += "</table>"
+    
+    # Add summary at the bottom
+    log_details += f"<p>Total items updated: {len(changed_rows)}</p>"
     return log_details
