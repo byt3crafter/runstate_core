@@ -558,7 +558,12 @@ def update_sales_order_prices(so):
                 # Update the database directly
                 frappe.db.set_value('Sales Order Item', item.name, {
                     'rate': latest_price,
+                    'baserate': basic_rate,
                     'amount': new_amount,
+                    'base_amount': new_amount,
+                    'margin_rate_or_amount': 0,
+                    'discount_percentage': 0,
+                    'discount_amount': 0,
                     'price_list_rate': latest_price
                 }, update_modified=True)
                 
