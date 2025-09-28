@@ -3,3 +3,4 @@ impex.patches.p1_migrate_bin_location_item
 
 [post_model_sync]
 impex.patches.recalculate-item-prices
+impex.patches.add_price_change_rules_to_item_groups
