@@ -845,4 +845,111 @@ def add_auto_price_rules(doctype, docname):
                     "idx": existing_rules + 1
                 })
                 new_rule.insert(ignore_permissions=True)
+
+@frappe.whitelist()
+def add_item_rule_price(item_code: str, price_list: str, margin: float, base_price_list: str | None = None, for_company: str | None = None):
+    """
+    Add or update a Rule Prices child row under the Item doctype.
+    - Avoid duplicates per (price_list, for_company) if possible.
+    - If an existing row matches, update its margin/base_price_list.
+    """
+    if not item_code or not price_list:
+        frappe.throw("Item Code and Price List are required")
+
+    doc = frappe.get_doc("Item", item_code)
+
+    # Determine the company field name on child doctype if present
+    # company_field = None
+    # rule_meta = frappe.get_meta("Rule Prices")
+    # if rule_meta.has_field("for_company"):
+    #     company_field = "for_company"
+    # elif rule_meta.has_field("company"):
+    #     company_field = "company"
     
+    # Try to find an existing rule row
+    existing = None
+    for row in doc.rule_prices:
+        if row.price_list == price_list and row.company == for_company:
+            existing = row
+            break
+
+    if existing:
+        existing.margin = flt(margin)
+        existing.base_price_list = base_price_list or ""
+    else:
+        payload = {
+            "price_list": price_list,
+            "margin": flt(margin),
+            "base_price_list": base_price_list or "",
+            "company": for_company
+        }
+        doc.append("rule_prices", payload)
+
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {
+        "item_code": item_code,
+        "price_list": price_list,
+        "margin": flt(margin),
+        "base_price_list": base_price_list or "",
+        "for_company": for_company or "",
+        "status": "success"
+    }
+
+@frappe.whitelist()
+def get_item_rule_prices(item_code: str, for_company: str | None = None):
+    """
+    Return Rule Prices child rows for an Item filtered by company (if provided).
+    Includes child row name for UI actions (edit/delete).
+    """
+    if not item_code:
+        return []
+    filters = {
+        "parenttype": "Item",
+        "parent": item_code,
+    }
+    if for_company:
+        filters["company"] = for_company
+
+    rows = frappe.get_all(
+        "Rule Prices",
+        filters=filters,
+        fields=["name", "price_list", "margin", "base_price_list", "company"],
+        order_by="idx asc"
+    )
+    return rows
+
+@frappe.whitelist()
+def delete_item_rule_prices(item_code: str, names):
+    """
+    Delete Rule Prices child rows by name for the given Item.
+    Safely updates the child table via the parent document to keep idx consistent.
+    """
+    if isinstance(names, str):
+        try:
+            names = frappe.parse_json(names)
+        except Exception:
+            names = [names]
+    names = names or []
+    if not item_code or not names:
+        return {"deleted": 0, "removed": []}
+
+    doc = frappe.get_doc("Item", item_code)
+    keep = []
+    removed = []
+    for row in doc.rule_prices:
+        if row.name in names:
+            removed.append(row.name)
+        else:
+            keep.append(row)
+
+    if not removed:
+        return {"deleted": 0, "removed": []}
+
+    doc.set("rule_prices", keep)
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {"deleted": len(removed), "removed": removed}
+
