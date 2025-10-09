@@ -419,16 +419,31 @@ def create_price_change_from_purchase_invoice(
 
     if doc.get("is_return"):
         return
-    
-	# If it's not the main company return
-    main_company = frappe.db.get_single_value("Impex Settings", "main_company")
-    if doc.company != main_company:
-        return
+
+    # Helper: upsert a rule with precedence and company-specific preference
+    def upsert_rule(rule_map, rule_dict, source):
+        # source precedence: Item Group < Item < Supplier
+        rank = 1 if source == "Item Group" else 2 if source == "Item" else 3
+        price_list = rule_dict["price_list"]
+        existing = rule_map.get(price_list)
+        rule_dict["source"] = source
+        rule_dict["_rank"] = rank
+        if not existing:
+            rule_map[price_list] = rule_dict
+            return
+        if rank > existing["_rank"]:
+            rule_map[price_list] = rule_dict
+            return
+        if rank == existing["_rank"]:
+            # prefer company-specific over generic for the same source
+            if (rule_dict.get("company") and not existing.get("company")):
+                rule_map[price_list] = rule_dict
 
     # Prepare data
     items_data = {}  # Cache for item data
     price_lists = set()  # Track unique price lists
     supplier_doc = frappe.get_cached_doc("Supplier", {"supplier_name": doc.supplier})
+    doc_company = doc.company
 
     # Create Price Change doc
     price_change_doc = frappe.new_doc("Price Change")
@@ -471,16 +486,7 @@ def create_price_change_from_purchase_invoice(
 
         # Index rates by item_code
         last_rates_dict = {r.item_code: r.base_rate for r in last_rates}
-    
-    # update if price list is buying or if no last rate or rate change is greater than 2
-    # price_change_threshold = Default_Price_Change_Threshold
-    # try:
-    #     price_change_threshold = frappe.db.get_single_value(
-    #         "Price Change Settings", "price_change_threshold"
-    #     )
-    # except Exception:
-    #     price_change_threshold = Default_Price_Change_Threshold
-    
+
     # Process items
     for item in doc.items:
         # Add item to Price Change
@@ -507,84 +513,86 @@ def create_price_change_from_purchase_invoice(
                 "rules": {},
             }
 
-        # Get rules from Item Group
+        # Get rules from Item Group, filtered by company (blank = global)
         for group_rule in items_data[item.item_code]["item_group"].rule_prices:
-            price_lists.add(group_rule.price_list)
-            items_data[item.item_code]["rules"][group_rule.price_list] = {
-                "item_code": item.item_code,
-                "item_name": item.item_name,
-                "price_list": group_rule.price_list,
-                "margin": group_rule.margin,
-                "base_price_list": group_rule.base_price_list,
-                "source": "Item Group",
-            }
+            if not group_rule.company or group_rule.company == doc_company:
+                price_lists.add(group_rule.price_list)
+                upsert_rule(
+                    items_data[item.item_code]["rules"],
+                    {
+                        "item_code": item.item_code,
+                        "item_name": item.item_name,
+                        "price_list": group_rule.price_list,
+                        "margin": group_rule.margin,
+                        "base_price_list": group_rule.base_price_list,
+                        # Use the company from the PO/PI on the Price Change rule
+                        "company": doc_company,
+                    },
+                    "Item Group",
+                )
 
-        # Override with Item rules
+        # Override with Item rules (filtered by company)
         for item_rule in items_data[item.item_code]["item"].rule_prices:
-            price_lists.add(item_rule.price_list)
-            items_data[item.item_code]["rules"][item_rule.price_list] = {
-                "item_code": item.item_code,
-                "item_name": item.item_name,
-                "price_list": item_rule.price_list,
-                "margin": item_rule.margin,
-                "base_price_list": item_rule.base_price_list,
-                "source": "Item",
-            }
+            if not item_rule.company or item_rule.company == doc_company:
+                price_lists.add(item_rule.price_list)
+                upsert_rule(
+                    items_data[item.item_code]["rules"],
+                    {
+                        "item_code": item.item_code,
+                        "item_name": item.item_name,
+                        "price_list": item_rule.price_list,
+                        "margin": item_rule.margin,
+                        "base_price_list": item_rule.base_price_list,
+                        "company": doc_company,
+                    },
+                    "Item",
+                )
 
-        # Override with Supplier rules
+        # Override with Supplier rules (filtered by company and matching item)
         for supplier_rule in supplier_doc.rule_prices:
-            if supplier_rule.item_code == item.item_code:
+            if (
+                supplier_rule.item_code == item.item_code
+                and (not supplier_rule.company or supplier_rule.company == doc_company)
+            ):
                 price_lists.add(supplier_rule.price_list)
-                items_data[item.item_code]["rules"][supplier_rule.price_list] = {
-                    "item_code": item.item_code,
-                    "item_name": item.item_name,
-                    "price_list": supplier_rule.price_list,
-                    "margin": supplier_rule.margin,
-                    "base_price_list": supplier_rule.base_price_list,
-                    "source": "Supplier",
-                }
-        
+                upsert_rule(
+                    items_data[item.item_code]["rules"],
+                    {
+                        "item_code": item.item_code,
+                        "item_name": item.item_name,
+                        "price_list": supplier_rule.price_list,
+                        "margin": supplier_rule.margin,
+                        "base_price_list": supplier_rule.base_price_list,
+                        "company": doc_company,
+                    },
+                    "Supplier",
+                )
+
     # Add all rules to price change doc
     for item_data in items_data.values():
         for rule in item_data["rules"].values():
-            price_change_doc.append("rule_prices", rule)
+            price_change_doc.append(
+                "rule_prices",
+                {
+                    "item_code": rule["item_code"],
+                    "price_list": rule["price_list"],
+                    "margin": rule["margin"],
+                    "base_price_list": rule["base_price_list"],
+                    "company": rule.get("company") or doc_company,
+                },
+            )
 
     if price_change_doc.items:
         # Calculate prices to check for changes
         price_change_doc.calc_price_change()
 
-        # price_change_threshold = Default_Price_Change_Threshold
-        # try:
-        #     price_change_threshold = frappe.db.get_single_value(
-        #         "Price Change Settings", "price_change_threshold"
-        #     )
-        # except Exception:
-        #     price_change_threshold = Default_Price_Change_Threshold
-
         # Check if any prices actually changed
         changed_prices = []
         for rule in price_change_doc.rule_prices:
             if not rule.last_rate or flt(rule.new_rate, 2) != flt(rule.last_rate, 2):
-                # item_row = next(
-                #     (
-                #         item
-                #         for item in price_change_doc.items
-                #         if item.item_code == rule.item_code
-                #     ),
-                #     None,
-                # )
-                # # update if price list is buying
-                # if "Buying" in rule.price_list:
-                #     changed_prices.append(rule)
-                # # update if no last rate or rate change is greater than 2
-                # elif item_row and (
-                #     not item_row.last_rate
-                #     or abs(item_row.rate_change) > price_change_threshold
-                # ):
                 changed_prices.append(rule)
 
         if changed_prices:
-            #price_change_doc.rule_prices = changed_prices
             price_change_doc.save(ignore_permissions=True)
             url = frappe.utils.get_url_to_form("Price Change", price_change_doc.name)
             frappe.msgprint(
@@ -592,6 +600,7 @@ def create_price_change_from_purchase_invoice(
             )
         else:
             frappe.msgprint("No Price Change Created, No Changes Found")
+
 
 @frappe.whitelist()
 def recalculate_zero_rated_item_prices():
@@ -807,44 +816,53 @@ def recalculate_zero_rated_item_prices():
 
 def add_auto_price_rules(doctype, docname):
     rule_exists = frappe.db.exists("Impex Settings Automatic Rule", {"document": doctype})
-    if rule_exists:
-        all_rules = frappe.db.get_all("Impex Settings Automatic Rule", 
-                        filters={"document": doctype},
-                        fields=["price_list", "margin", "base_price_list", "name"])
-        
-        # Get parent document to properly manage idx values
-        doc = frappe.get_doc(doctype, docname)
-        existing_rules = len(doc.rule_prices) if hasattr(doc, 'rule_prices') else 0
-        
-        for rule in all_rules:
-            exists = frappe.db.exists(
-                "Rule Prices", 
-                {"parent": docname, "parenttype": doctype, "price_list": rule.price_list}
-            )
-    
-            if exists:
-                # Update existing rule
-                frappe.db.set_value(
-                    "Rule Prices", 
-                    exists, 
-                    {
-                        "margin": rule.margin,
-                        "base_price_list": rule.base_price_list
-                    }
-                )
-            else:
-                # Create new rule
-                new_rule = frappe.get_doc({
-                    "doctype": "Rule Prices",
-                    "parenttype": doctype,
-                    "parent": docname,
-                    "parentfield": "rule_prices",
-                    "price_list": rule.price_list,
+    if not rule_exists:
+        return
+
+    all_rules = frappe.get_all(
+        "Impex Settings Automatic Rule",
+        filters={"document": doctype},
+        fields=["price_list", "margin", "base_price_list", "company", "name"],
+    )
+
+    doc = frappe.get_doc(doctype, docname)
+    existing_rules = len(doc.rule_prices) if hasattr(doc, "rule_prices") else 0
+
+    for rule in all_rules:
+        rp_name = frappe.db.exists(
+            "Rule Prices",
+            {
+                "parent": docname,
+                "parenttype": doctype,
+                "price_list": rule.price_list,
+                "company": rule.company,
+            },
+        )
+
+        if rp_name:
+            frappe.db.set_value(
+                "Rule Prices",
+                rp_name,
+                {
                     "margin": rule.margin,
                     "base_price_list": rule.base_price_list,
-                    "idx": existing_rules + 1
-                })
-                new_rule.insert(ignore_permissions=True)
+                    "company": rule.company,
+                },
+            )
+        else:
+            new_rule = frappe.get_doc({
+                "doctype": "Rule Prices",
+                "parenttype": doctype,
+                "parent": docname,
+                "parentfield": "rule_prices",
+                "price_list": rule.price_list,
+                "margin": rule.margin,
+                "base_price_list": rule.base_price_list,
+                "company": rule.company,
+                "idx": existing_rules + 1,
+            })
+            new_rule.insert(ignore_permissions=True)
+            existing_rules += 1
 
 @frappe.whitelist()
 def add_item_rule_price(item_code: str, price_list: str, margin: float, base_price_list: str | None = None, for_company: str | None = None):
@@ -900,7 +918,7 @@ def add_item_rule_price(item_code: str, price_list: str, margin: float, base_pri
 @frappe.whitelist()
 def get_item_rule_prices(item_code: str, for_company: str | None = None):
     """
-    Return Rule Prices child rows for an Item filtered by company (if provided).
+    Return Rule Prices child rows for an Item filtered by company.
     Includes child row name for UI actions (edit/delete).
     """
     if not item_code:
