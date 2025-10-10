@@ -878,6 +878,9 @@ def get_rule_prices(doctype: str, docname: str, for_company: str | None = None):
             "margin": row.margin,
             "base_price_list": row.base_price_list,
             "company": row.company,
+            # Include Supplier-only fields (empty for others)
+            "item_code": getattr(row, "item_code", None),
+            "item_name": getattr(row, "item_name", None),
         })
     return out
 
@@ -889,26 +892,55 @@ def add_rule_price(
     margin: float,
     base_price_list: str | None = None,
     for_company: str | None = None,
+    item_code: str | None = None,
+    item_name: str | None = None,
 ):
     doc = frappe.get_doc(doctype, docname)
     target_company = for_company or ""
+
+    # For Supplier, use (price_list, company, item_code) as unique key
     found = None
     for r in getattr(doc, "rule_prices", []):
-        if r.price_list == price_list and r.company == target_company:
-            found = r
-            break
+        same_price_list = r.price_list == price_list
+        same_company = (r.company or "") == target_company
+        if doctype == "Supplier":
+            same_item = (r.item_code or "") == (item_code or "")
+            if same_price_list and same_company and same_item:
+                found = r
+                break
+        else:
+            if same_price_list and same_company:
+                found = r
+                break
+
+    # If Supplier and item_name not provided, fetch it
+    if doctype == "Supplier" and item_code and not item_name:
+        try:
+            val = frappe.db.get_value("Item", item_code, "item_name")
+            item_name = val or ""
+        except Exception:
+            item_name = item_name or ""
 
     if found:
         found.margin = flt(margin)
         found.base_price_list = base_price_list or ""
         found.company = target_company
+        if doctype == "Supplier":
+            found.item_code = item_code or ""
+            found.item_name = item_name or ""
     else:
-        doc.append("rule_prices", {
+        payload = {
             "price_list": price_list,
             "margin": flt(margin),
             "base_price_list": base_price_list or "",
             "company": target_company
-        })
+        }
+        if doctype == "Supplier":
+            payload.update({
+                "item_code": item_code or "",
+                "item_name": item_name or "",
+            })
+        doc.append("rule_prices", payload)
 
     doc.save(ignore_permissions=True)
     frappe.db.commit()

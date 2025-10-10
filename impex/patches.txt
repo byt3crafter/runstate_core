@@ -5,3 +5,4 @@ impex.patches.p1_migrate_bin_location_item
 impex.patches.recalculate-item-prices
 impex.patches.add_price_change_rules_to_item_groups
 impex.patches.patch_rule_prices_with_default_company
+impex.patches.patch_supplier_rule_prices_with_default_company

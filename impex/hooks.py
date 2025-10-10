@@ -36,6 +36,7 @@ doctype_js = {
 	"Stock Reconciliation": "public/js/stock_reconciliation.js",
 	"Sales Invoice": "public/js/sales_invoice.js",
 	"Item Group": "public/js/item_group.js",
+	"Supplier": "public/js/supplier.js"
 }
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
@@ -317,7 +318,8 @@ fixtures = [
                     "Sales Order-custom_branch_purchase_order",
                     "Item-custom_rule_prices_html",
                     "Item-custom_rule_prices_company",
-                    "Item Group-custom_rule_prices_html"
+                    "Item Group-custom_rule_prices_html",
+                    "Supplier-custom_rule_prices_html"
                 ],
             ]
         ],

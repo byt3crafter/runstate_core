@@ -10,7 +10,8 @@
   "item_name",
   "price_list",
   "margin",
-  "base_price_list"
+  "base_price_list",
+  "company"
  ],
  "fields": [
   {
@@ -55,12 +56,18 @@
    "in_list_view": 1,
    "label": "Base on Price List",
    "options": "Price List"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-05-09 15:33:56.550516",
+ "modified": "2025-10-10 19:09:53.825133",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Supplier Price Change Rule",
