@@ -34,7 +34,8 @@ doctype_js = {
 	"Item": "public/js/item.js",
 	"Purchase Order": "public/js/purchase_order.js",
 	"Stock Reconciliation": "public/js/stock_reconciliation.js",
-	"Sales Invoice": "public/js/sales_invoice.js"
+	"Sales Invoice": "public/js/sales_invoice.js",
+	"Item Group": "public/js/item_group.js",
 }
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
@@ -313,7 +314,10 @@ fixtures = [
                     "Item-custom_section_stock_freezing",
                     "Item-custom_stock_frozen_for_warehouse",
                     "Stock Reconciliation-custom_remove_items_with_no_change",
-                    "Sales Order-custom_branch_purchase_order"
+                    "Sales Order-custom_branch_purchase_order",
+                    "Item-custom_rule_prices_html",
+                    "Item-custom_rule_prices_company",
+                    "Item Group-custom_rule_prices_html"
                 ],
             ]
         ],

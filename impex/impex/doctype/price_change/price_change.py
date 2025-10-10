@@ -1,6 +1,7 @@
 import frappe
 from frappe.utils import flt
 from frappe.model.document import Document
+import json
 
 Default_Price_Change_Threshold = 2
 
@@ -865,109 +866,79 @@ def add_auto_price_rules(doctype, docname):
             existing_rules += 1
 
 @frappe.whitelist()
-def add_item_rule_price(item_code: str, price_list: str, margin: float, base_price_list: str | None = None, for_company: str | None = None):
-    """
-    Add or update a Rule Prices child row under the Item doctype.
-    - Avoid duplicates per (price_list, for_company) if possible.
-    - If an existing row matches, update its margin/base_price_list.
-    """
-    if not item_code or not price_list:
-        frappe.throw("Item Code and Price List are required")
+def get_rule_prices(doctype: str, docname: str, for_company: str | None = None):
+    doc = frappe.get_doc(doctype, docname)
+    out = []
+    for row in getattr(doc, "rule_prices", []):
+        if for_company and row.company and row.company != for_company:
+            continue
+        out.append({
+            "name": row.name,
+            "price_list": row.price_list,
+            "margin": row.margin,
+            "base_price_list": row.base_price_list,
+            "company": row.company,
+        })
+    return out
 
-    doc = frappe.get_doc("Item", item_code)
-
-    # Determine the company field name on child doctype if present
-    # company_field = None
-    # rule_meta = frappe.get_meta("Rule Prices")
-    # if rule_meta.has_field("for_company"):
-    #     company_field = "for_company"
-    # elif rule_meta.has_field("company"):
-    #     company_field = "company"
-    
-    # Try to find an existing rule row
-    existing = None
-    for row in doc.rule_prices:
-        if row.price_list == price_list and row.company == for_company:
-            existing = row
+@frappe.whitelist()
+def add_rule_price(
+    doctype: str,
+    docname: str,
+    price_list: str,
+    margin: float,
+    base_price_list: str | None = None,
+    for_company: str | None = None,
+):
+    doc = frappe.get_doc(doctype, docname)
+    target_company = for_company or ""
+    found = None
+    for r in getattr(doc, "rule_prices", []):
+        if r.price_list == price_list and r.company == target_company:
+            found = r
             break
 
-    if existing:
-        existing.margin = flt(margin)
-        existing.base_price_list = base_price_list or ""
+    if found:
+        found.margin = flt(margin)
+        found.base_price_list = base_price_list or ""
+        found.company = target_company
     else:
-        payload = {
+        doc.append("rule_prices", {
             "price_list": price_list,
             "margin": flt(margin),
             "base_price_list": base_price_list or "",
-            "company": for_company
-        }
-        doc.append("rule_prices", payload)
+            "company": target_company
+        })
 
     doc.save(ignore_permissions=True)
     frappe.db.commit()
-
-    return {
-        "item_code": item_code,
-        "price_list": price_list,
-        "margin": flt(margin),
-        "base_price_list": base_price_list or "",
-        "for_company": for_company or "",
-        "status": "success"
-    }
+    return True
 
 @frappe.whitelist()
-def get_item_rule_prices(item_code: str, for_company: str | None = None):
-    """
-    Return Rule Prices child rows for an Item filtered by company.
-    Includes child row name for UI actions (edit/delete).
-    """
-    if not item_code:
-        return []
-    filters = {
-        "parenttype": "Item",
-        "parent": item_code,
-    }
-    if for_company:
-        filters["company"] = for_company
-
-    rows = frappe.get_all(
-        "Rule Prices",
-        filters=filters,
-        fields=["name", "price_list", "margin", "base_price_list", "company"],
-        order_by="idx asc"
-    )
-    return rows
-
-@frappe.whitelist()
-def delete_item_rule_prices(item_code: str, names):
-    """
-    Delete Rule Prices child rows by name for the given Item.
-    Safely updates the child table via the parent document to keep idx consistent.
-    """
+def delete_rule_prices(doctype: str, docname: str, names):
     if isinstance(names, str):
         try:
-            names = frappe.parse_json(names)
+            names = json.loads(names)
         except Exception:
             names = [names]
+
     names = names or []
-    if not item_code or not names:
-        return {"deleted": 0, "removed": []}
+    if not names:
+        return {"deleted": 0}
 
-    doc = frappe.get_doc("Item", item_code)
+    doc = frappe.get_doc(doctype, docname)
     keep = []
-    removed = []
-    for row in doc.rule_prices:
-        if row.name in names:
-            removed.append(row.name)
+    deleted = []
+    for r in getattr(doc, "rule_prices", []):
+        if r.name in names:
+            deleted.append(r.name)
         else:
-            keep.append(row)
-
-    if not removed:
-        return {"deleted": 0, "removed": []}
+            keep.append(r)
 
     doc.set("rule_prices", keep)
-    doc.save(ignore_permissions=True)
-    frappe.db.commit()
+    if deleted:
+        doc.save(ignore_permissions=True)
+        frappe.db.commit()
 
-    return {"deleted": len(removed), "removed": removed}
+    return {"deleted": len(deleted), "removed": deleted}
 
