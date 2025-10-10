@@ -60,7 +60,14 @@ class ItemPriceRuleImportTool(Document):
 				if frappe.db.exists("Item", {"item_code": row[0]}):
 					self.current_item = row[0]
 					self.current_item_doc = frappe.get_doc("Item", row[0])
-					self.current_item_doc.rule_prices = []
+
+					target_company = (self.company or "").strip()
+					kept = []
+					for rp in (self.current_item_doc.rule_prices or []):
+						rp_company = (rp.company or "").strip()
+						if rp_company != target_company:
+							kept.append(rp)
+					self.current_item_doc.set("rule_prices", kept)
 				else:
 					self.log_error(row[0], f"Item code {row[0]} not found")
 					continue
@@ -69,26 +76,9 @@ class ItemPriceRuleImportTool(Document):
 				self.current_item_doc.append("rule_prices", {
 					"price_list": row[1],
 					"margin": row[3],
-					"base_price_list": row[2]
+					"base_price_list": row[2],
+					"company": self.company
 				})
-
-			# if frappe.db.exists("Item", {"item_code": row[0]}):
-			# 	self.current_item_doc = frappe.get_doc("Item", row[0])  # Use instance variable
-
-			# 	if self.current_item != self.current_item_doc.item_code:
-			# 		self.current_item = self.current_item_doc.item_code
-			# 		self.current_item_doc.rule_prices = []
-
-			# 	self.current_item_doc.append("rule_prices", {
-			# 		"price_list": row[1],
-			# 		"margin": row[3],
-			# 		"base_price_list": row[2]
-			# 	})
-			# 	self.current_item_doc.save(ignore_permissions=True)
-			# 	frappe.db.commit()
-			# else:
-			# 	self.log_error(row[0], f"Item code {row[0]} not found")
-			# 	continue
 
 	def check_file(self):
 		file_content, extn = self.read_file()

@@ -8,6 +8,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "company",
   "excel_file",
   "section_break_mxjp8",
   "error_log",
@@ -94,12 +95,20 @@
    "label": "Errors",
    "options": "Item Price Rule Import Error",
    "read_only": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "For Company",
+   "options": "Company",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-03-29 01:06:13.630448",
+ "modified": "2025-10-10 02:47:31.129048",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Item Price Rule Import Tool",
