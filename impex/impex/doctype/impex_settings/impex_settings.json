@@ -11,6 +11,7 @@
   "update_sales_orders_prices",
   "column_break_ugrdt",
   "update_item_prices",
+  "btn_sync_items",
   "section_item_details",
   "item_details_buying_price_list",
   "column_break_afajp",
@@ -26,7 +27,11 @@
   "default_settings_section",
   "default_company_settings",
   "section_break_d6t7y",
-  "automatic_rules"
+  "automatic_rules",
+  "invoice_receipt_page_section",
+  "multiple_receipt_role",
+  "section_items_sync",
+  "items_sync_settings"
  ],
  "fields": [
   {
@@ -147,12 +152,39 @@
    "fieldtype": "Table",
    "label": "Automatically Added Price Rules",
    "options": "Impex Settings Automatic Rule"
+  },
+  {
+   "fieldname": "invoice_receipt_page_section",
+   "fieldtype": "Section Break",
+   "label": "Invoice Receipt Page"
+  },
+  {
+   "fieldname": "multiple_receipt_role",
+   "fieldtype": "Link",
+   "label": "Role Allowed to Receive Multiple Invoices",
+   "options": "Role"
+  },
+  {
+   "fieldname": "section_items_sync",
+   "fieldtype": "Section Break",
+   "label": "Items Sync"
+  },
+  {
+   "fieldname": "items_sync_settings",
+   "fieldtype": "Table",
+   "label": "Items Sync Settings",
+   "options": "Item Sync Settings"
+  },
+  {
+   "fieldname": "btn_sync_items",
+   "fieldtype": "Button",
+   "label": "Sync Item Details"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-07-26 16:33:48.431773",
+ "modified": "2025-10-15 23:25:47.437248",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Impex Settings",
