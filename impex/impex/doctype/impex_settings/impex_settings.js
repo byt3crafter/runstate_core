@@ -66,11 +66,31 @@ frappe.ui.form.on("Impex Settings", {
 
   update_item_prices: function(frm){
     frappe.call({
-		method: "impex.impex.doctype.price_change.price_change.recalculate_zero_rated_item_prices",
-		freeze: true,
-		callback: function (r) {
-		  console.log(r);
-		},
-	  });
+      method: "impex.impex.doctype.price_change.price_change.recalculate_zero_rated_item_prices",
+        freeze: true,
+        callback: function (r) {
+          console.log(r);
+        },
+    });
+  },
+
+  btn_sync_items: function(frm){
+    frappe.call({
+      method: "impex.impex.api.items_sync.sync_items_to_servers",
+      freeze: true,
+      freeze_message: "Syncing",
+      callback: function(r) {
+        const res = r.message || {};
+        const status = (res.status || 'unknown').toLowerCase();
+        const text = res.message || '';
+        const indicator = status === 'failed' ? 'red' : status === 'queued' ? 'orange' : 'green';
+
+        frappe.msgprint({
+          title: __('Item Sync'),
+          message: `${__('Status')}: ${frappe.utils.escape_html(status)}<br>${frappe.utils.escape_html(text)}`,
+          indicator
+        });
+      }
+    })
   }
 });
