@@ -54,6 +54,32 @@ def _request_with_token(method: str, url: str, api_key: str, api_secret: str, pa
     resp = requests.request(method, url, headers=headers, data=data, timeout=timeout)
     return resp
 
+def _upsert_brand(site_url: str, api_key: str, api_secret: str, brand: str):
+    """Ensure Brand exists on target site."""
+    if not brand:
+        return True, None
+    name_key = quote(brand)
+    put_url = f"{site_url}/api/resource/Brand/{name_key}"
+    payload = {"brand": brand}
+    resp = _request_with_token("PUT", put_url, api_key, api_secret, payload)
+    if resp.status_code == 404:
+        post_url = f"{site_url}/api/resource/Brand"
+        resp = _request_with_token("POST", post_url, api_key, api_secret, payload)
+    return (resp.ok, (resp.json() if resp.ok else resp.text))
+
+def _upsert_item_group(site_url: str, api_key: str, api_secret: str, group: str, parent: str = "All Item Groups"):
+    """Ensure Item Group exists on target site. Creates as non-group under All Item Groups."""
+    if not group:
+        return True, None
+    name_key = quote(group)
+    put_url = f"{site_url}/api/resource/Item%20Group/{name_key}"
+    payload = {"item_group_name": group, "is_group": 0, "parent_item_group": parent}
+    resp = _request_with_token("PUT", put_url, api_key, api_secret, payload)
+    if resp.status_code == 404:
+        post_url = f"{site_url}/api/resource/Item%20Group"
+        resp = _request_with_token("POST", post_url, api_key, api_secret, payload)
+    return (resp.ok, (resp.json() if resp.ok else resp.text))
+
 @frappe.whitelist()
 def sync_items_to_servers(item_codes: list[str] | None = None, full_sync: int = 0, run_in_background: int = 1):
     """
@@ -154,18 +180,34 @@ def sync_items_to_servers(item_codes: list[str] | None = None, full_sync: int = 
             server_results.append({"site_url": s.site_url, "sent": 0, "errors": ["Missing credentials or URL"]})
             continue
 
+        if s.disabled:
+            server_results.append({"site_url": s.site_url, "sent": 0, "errors": ["Disabled URL"]})
+            # Skip syncing to disabled targets
+            continue
+
         sent = 0
         errors = []
-        # Per-server incremental: filter locally by that server's last_sync if no explicit list/full_sync
         candidates = items_to_sync
         if not item_codes and int(full_sync or 0) != 1 and s.last_sync:
             last_sync_ts = s.last_sync
             candidates = [it for it in items_to_sync if it.get("modified") and it.get("modified") >= last_sync_ts]
 
+        unique_groups = sorted({(it.get("item_group") or "").strip() for it in candidates if (it.get("item_group") or "").strip()})
+        unique_brands = sorted({(it.get("brand") or "").strip() for it in candidates if (it.get("brand") or "").strip()})
+
+        for grp in unique_groups:
+            ok, resp_msg = _upsert_item_group(site_url, api_key, api_secret, grp)
+            if not ok:
+                errors.append(f"Item Group '{grp}': {resp_msg}")
+
+        for br in unique_brands:
+            ok, resp_msg = _upsert_brand(site_url, api_key, api_secret, br)
+            if not ok:
+                errors.append(f"Brand '{br}': {resp_msg}")
+
         for it in candidates:
             try:
                 payload = _prepare_item_payload(it)
-                # extra safety: ensure no datetime sneaks in
                 payload.pop("modified", None)
 
                 name_key = quote(payload["item_code"])
@@ -189,22 +231,32 @@ def sync_items_to_servers(item_codes: list[str] | None = None, full_sync: int = 
         # Update last_sync for this server if at least the upsert loop ran
         last_sync_ts = now_datetime()
         frappe.db.set_value(
-                "Item Sync Settings",
-                s.name,
-                "last_sync",
-                last_sync_ts,
-                update_modified=False
-            )
+            "Item Sync Settings",
+            s.name,
+            "last_sync",
+            last_sync_ts,
+            update_modified=False
+        )
         total_sent += sent
         server_results.append({"site_url": s.site_url, "sent": sent, "errors": errors})
 
     # Persist last_sync updates
-    settings.save(ignore_permissions=True)
     frappe.db.commit()
 
     error_servers = sum(1 for r in server_results if r.get("errors"))
     status = "synced" if not (total_sent == 0 and error_servers == len(rows)) else "failed"
     message = f"Servers: {len(rows)}, Items sent: {total_sent}. " + (f"{error_servers} server(s) had errors." if error_servers else "All servers OK.")
+
+    # Log all errors into a single Error Log entry
+    try:
+        all_errors = []
+        for res in server_results:
+            for err in (res.get("errors") or []):
+                all_errors.append(f"[{res.get('site_url') or 'unknown'}] {err}")
+        if all_errors:
+            frappe.log_error("\n".join(all_errors), "Item Sync Errors")
+    except Exception:
+        pass
 
     return {
         "status": status,
