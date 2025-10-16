@@ -9,6 +9,7 @@
   "site_url",
   "api_key",
   "api_secret",
+  "disabled",
   "last_sync"
  ],
  "fields": [
@@ -39,12 +40,19 @@
    "in_list_view": 1,
    "label": "Last Sync",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "disabled",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Disabled"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-10-16 02:06:34.324092",
+ "modified": "2025-10-17 01:19:45.025232",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Item Sync Settings",
