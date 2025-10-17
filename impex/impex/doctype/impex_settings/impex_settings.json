@@ -9,9 +9,10 @@
  "field_order": [
   "create_pick_list",
   "update_sales_orders_prices",
-  "column_break_ugrdt",
   "update_item_prices",
+  "column_break_ugrdt",
   "btn_sync_items",
+  "sync_suppliers",
   "section_item_details",
   "item_details_buying_price_list",
   "column_break_afajp",
@@ -179,12 +180,17 @@
    "fieldname": "btn_sync_items",
    "fieldtype": "Button",
    "label": "Sync Item Details"
+  },
+  {
+   "fieldname": "sync_suppliers",
+   "fieldtype": "Button",
+   "label": "Sync Suppliers"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-10-15 23:25:47.437248",
+ "modified": "2025-10-17 19:56:17.804021",
  "modified_by": "Administrator",
  "module": "Impex",
  "name": "Impex Settings",

@@ -4,7 +4,6 @@ import requests
 from urllib.parse import quote
 from frappe.utils import now_datetime, cint
 
-# Basic fields to sync (no datetime fields here)
 BASIC_ITEM_FIELDS = [
     "name",
     "item_code",
