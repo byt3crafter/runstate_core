@@ -307,7 +307,7 @@ def generate_pick_lists():
                 continue
 
             # Process items in batches of 25
-            for i in 0, len(items), 25:
+            for i in range(0, len(items), 25):
                 items_batch = items[i:i + 25]
                 try:
                     print(f"\nCreating pick list for {len(items_batch)} items")
