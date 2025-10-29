@@ -187,5 +187,75 @@ frappe.ui.form.on("Impex Settings", {
     });
 
     d.show();
+  },
+
+  sync_item_prices: function(frm) {
+    const d = new frappe.ui.Dialog({
+      title: __('Sync Item Prices'),
+      fields: [
+        {
+          fieldtype: 'Select',
+          fieldname: 'sync_mode',
+          label: __('What to Sync'),
+          options: [
+            { label: __('Sync All Supplier Prices'), value: 'all' },
+            { label: __('Sync Supplier Prices With Currency'), value: 'currency' }
+          ],
+          default: 'all',
+          reqd: 1
+        },
+        {
+          fieldtype: 'Link',
+          fieldname: 'currency',
+          label: __('Currency'),
+          options: 'Currency',
+          depends_on: "eval:doc.sync_mode=='currency'",
+          mandatory_depends_on: "eval:doc.sync_mode=='currency'"
+        },
+        {
+          fieldtype: 'Check',
+          fieldname: 'no_background',
+          label: __('Do Not Sync in Background'),
+          default: 0,
+          description: __('If checked, the sync will run now and block the UI until it finishes.')
+        }
+      ],
+      primary_action_label: __('Start Sync'),
+      primary_action: (values) => {
+        const run_in_background = values.no_background ? 0 : 1;
+
+        d.hide();
+
+        frappe.call({
+          method: "impex.impex.api.item_price_sync.sync_item_prices_to_servers",
+          args: {
+            sync_mode: values.sync_mode,
+            currency: values.currency || '',
+            run_in_background
+          },
+          freeze: true,
+          freeze_message: run_in_background ? __('Queuing sync...') : __('Syncing item prices...')
+        }).then(r => {
+          const res = r.message || {};
+          const status = (res.status || 'unknown').toLowerCase();
+          const text = res.message || '';
+          const indicator = status === 'failed' ? 'red' : status === 'queued' ? 'orange' : 'green';
+
+          frappe.msgprint({
+            title: __('Item Price Sync'),
+            message: `${__('Status')}: ${frappe.utils.escape_html(status)}<br>${frappe.utils.escape_html(text)}`,
+            indicator
+          });
+        }).catch(e => {
+          frappe.msgprint({
+            title: __('Item Price Sync'),
+            message: `${__('Status')}: failed<br>${frappe.utils.escape_html(e.message || e)}`,
+            indicator: 'red'
+          });
+        });
+      }
+    });
+
+    d.show();
   }
 });
