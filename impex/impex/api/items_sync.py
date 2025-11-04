@@ -102,7 +102,7 @@ def sync_items_to_servers(item_codes: list[str] | None = None, full_sync: int = 
         job = frappe.enqueue(
             "impex.impex.api.items_sync.sync_items_to_servers",
             queue="long",
-            timeout=60 * 60,  # 1 hour
+            timeout=10800,
             job_name=f"Sync Items ({frappe.session.user})",
             item_codes=item_codes,
             full_sync=full_sync,

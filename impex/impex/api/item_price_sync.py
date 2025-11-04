@@ -163,7 +163,7 @@ def sync_item_prices_to_servers(sync_mode: str = "all", currency: str | None = N
         job = frappe.enqueue(
             "impex.impex.api.item_price_sync.sync_item_prices_to_servers",
             queue="long",
-            timeout=60 * 60,
+            timeout=10800,
             job_name=f"Sync Item Prices ({frappe.session.user})",
             sync_mode=sync_mode,
             currency=currency,

@@ -93,7 +93,7 @@ def sync_suppliers_to_servers(supplier_names: list[str] | None = None, full_sync
         job = frappe.enqueue(
             "impex.impex.api.suppliers_sync.sync_suppliers_to_servers",
             queue="long",
-            timeout=60 * 60,
+            timeout=10800,
             job_name=f"Sync Suppliers ({frappe.session.user})",
             supplier_names=supplier_names,
             full_sync=full_sync,
