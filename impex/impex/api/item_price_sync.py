@@ -204,13 +204,27 @@ def sync_item_prices_to_servers(sync_mode: str = "all", currency: str | None = N
             "details": []
         }
 
-    # Collect Suppliers that have a Price List set
-    suppliers = frappe.get_all(
-        "Supplier",
-        filters={"default_price_list": ["!=", ""], "disabled": 0},
-        fields=["name", "supplier_name", "default_price_list"],
-        limit=0,
-    )
+    # Collect Suppliers that have a Price List set, and LEFT JOIN Price List to fetch its currency
+    sql = """
+        SELECT
+            s.name,
+            s.supplier_name,
+            s.default_price_list,
+            pl.currency AS price_list_currency
+        FROM `tabSupplier` AS s
+        LEFT JOIN `tabPrice List` AS pl
+            ON pl.name = s.default_price_list
+        WHERE
+            s.disabled = 0
+            AND COALESCE(s.default_price_list, '') != ''
+    """
+    params = {}
+    if sync_mode == "currency":
+        # If user selected a currency, only pick suppliers whose price list has that currency
+        sql += " AND pl.currency = %(currency)s"
+        params["currency"] = currency
+
+    suppliers = frappe.db.sql(sql, params, as_dict=True)
     if not suppliers:
         return {
             "status": "synced",
@@ -220,8 +234,13 @@ def sync_item_prices_to_servers(sync_mode: str = "all", currency: str | None = N
             "details": []
         }
 
-    # Build the set of relevant Price Lists from Supplier.price_list
-    price_lists = sorted({s.get("default_price_list") for s in suppliers if s.get("default_price_list")})
+    # Build the set of relevant Price Lists and a map of Price List -> Currency
+    price_lists = sorted({s["default_price_list"] for s in suppliers if s.get("default_price_list")})
+    pl_currency_map = {
+        s["default_price_list"]: s["price_list_currency"]
+        for s in suppliers
+        if s.get("default_price_list") and s.get("price_list_currency")
+    }
 
     # Collect Item Prices belonging to those Price Lists (supplier price lists, i.e. buying)
     ip_filters = {
@@ -255,12 +274,6 @@ def sync_item_prices_to_servers(sync_mode: str = "all", currency: str | None = N
             "details": []
         }
 
-    # Map each Price List to a currency (prefer currency from its item prices; fallback to selected currency)
-    pl_currency_map = {}
-    for pl in price_lists:
-        sample = next((ip for ip in item_prices if ip.get("price_list") == pl and ip.get("currency")), None)
-        pl_currency_map[pl] = sample.get("currency") if sample else (currency if sync_mode == "currency" else None)
-
     total_sent = 0
     server_results = []
 
@@ -281,7 +294,7 @@ def sync_item_prices_to_servers(sync_mode: str = "all", currency: str | None = N
         sent = 0
         errors = []
 
-        # Ensure all Price Lists exist on target first
+        # Ensure all Price Lists exist on target first using their currency
         for pl in price_lists:
             ok, resp_msg = _upsert_price_list(site_url, api_key, api_secret, pl, pl_currency_map.get(pl))
             if not ok:
