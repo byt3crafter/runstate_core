@@ -4,6 +4,7 @@ import requests
 from urllib.parse import quote
 from frappe.utils import now_datetime, cint
 from impex.impex.api.items_sync import _request_with_token
+from pymysql.err import OperationalError
 
 # Basic fields to sync for Supplier (no datetime fields)
 BASIC_SUPPLIER_FIELDS = [
@@ -69,6 +70,17 @@ def _upsert_supplier_group(site_url: str, api_key: str, api_secret: str, group: 
         post_url = f"{site_url}/api/resource/Supplier%20Group"
         resp = _request_with_token("POST", post_url, api_key, api_secret, payload)
     return (resp.ok, (resp.json() if resp.ok else resp.text))
+
+def _ensure_db_connection():
+    """Keep/recreate DB connection if MySQL dropped it during long HTTP work."""
+    try:
+        frappe.db.sql("select 1")
+    except Exception:
+        try:
+            frappe.db.close()
+        except Exception:
+            pass
+        frappe.db.connect()
 
 @frappe.whitelist()
 def sync_suppliers_to_servers(supplier_names: list[str] | None = None, full_sync: int = 0, run_in_background: int = 1):
@@ -160,6 +172,8 @@ def sync_suppliers_to_servers(supplier_names: list[str] | None = None, full_sync
     server_results = []
 
     for s in rows:
+        _ensure_db_connection()  # keep DB alive during long loop
+
         site_url = (s.site_url or "").rstrip("/")
         api_key = s.api_key or ""
         api_secret = s.get_password("api_secret") or ""
@@ -238,30 +252,39 @@ def sync_suppliers_to_servers(supplier_names: list[str] | None = None, full_sync
             except Exception as e:
                 errors.append(f"{sp.get('name')}: {e}")
 
-        # Update last_sync on child row
+        # Update last_sync on child row and commit immediately to avoid idle timeouts
         last_sync_ts = now_datetime()
         try:
+            _ensure_db_connection()
             frappe.db.set_value("Item Sync Settings", s.name, "last_sync", last_sync_ts, update_modified=False)
+            frappe.db.commit()
+        except OperationalError:
+            # Reconnect and retry once
+            try:
+                frappe.db.close()
+            except Exception:
+                pass
+            frappe.db.connect()
+            frappe.db.set_value("Item Sync Settings", s.name, "last_sync", last_sync_ts, update_modified=False)
+            frappe.db.commit()
         except Exception as e:
             errors.append(f"Failed to update last_sync: {e}")
 
         total_sent += sent
         server_results.append({"site_url": s.site_url, "sent": sent, "errors": errors})
 
-    frappe.db.commit()
-
     error_servers = sum(1 for r in server_results if r.get("errors"))
     status = "synced" if not (total_sent == 0 and error_servers == len(rows)) else "failed"
     message = f"Servers: {len(rows)}, Suppliers sent: {total_sent}. " + (f"{error_servers} server(s) had errors." if error_servers else "All servers OK.")
 
-    # Aggregate error log
+    # Aggregate error log (fix arg order: message, title)
     try:
         all_errors = []
         for res in server_results:
             for err in (res.get("errors") or []):
                 all_errors.append(f"[{res.get('site_url') or 'unknown'}] {err}")
         if all_errors:
-            frappe.log_error("Supplier Sync Errors", "\n".join(all_errors))
+            frappe.log_error("\n".join(all_errors), "Supplier Sync Errors")
     except Exception:
         pass
 

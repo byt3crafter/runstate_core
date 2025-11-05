@@ -3,6 +3,7 @@ import json
 import requests
 from frappe.utils import now_datetime, cint
 from urllib.parse import quote
+from pymysql.err import OperationalError
 
 def _auth_headers(api_key: str, api_secret: str):
     return {
@@ -150,6 +151,16 @@ def _set_supplier_price_list_remote(site_url: str, api_key: str, api_secret: str
     resp = _request_with_token("PUT", put_url, api_key, api_secret, payload)
     return (resp.ok, (resp.json() if resp.ok else resp.text))
 
+def _ensure_db_connection():
+    """Keep/recreate DB connection if MySQL dropped it during long HTTP work."""
+    try:
+        frappe.db.sql("select 1")
+    except Exception:
+        try:
+            frappe.db.close()
+        except Exception:
+            pass
+        frappe.db.connect()
 
 @frappe.whitelist()
 def sync_item_prices_to_servers(sync_mode: str = "all", currency: str | None = None, run_in_background: int = 1):
@@ -254,6 +265,8 @@ def sync_item_prices_to_servers(sync_mode: str = "all", currency: str | None = N
     server_results = []
 
     for s in rows:
+        _ensure_db_connection()  # keep DB alive during long loop
+
         site_url = (s.site_url or "").rstrip("/")
         api_key = s.api_key or ""
         api_secret = s.get_password("api_secret") or ""
@@ -308,15 +321,37 @@ def sync_item_prices_to_servers(sync_mode: str = "all", currency: str | None = N
             except Exception as e:
                 errors.append(f"Item Price [{ip.get('item_code')} @ {ip.get('price_list')}]: {e}")
 
+        last_sync_ts = now_datetime()
         try:
-            frappe.db.set_value("Item Sync Settings", s.name, "last_sync", now_datetime(), update_modified=False)
+            _ensure_db_connection()
+            frappe.db.set_value(
+                "Item Sync Settings",
+                s.name,
+                "last_sync",
+                last_sync_ts,
+                update_modified=False
+            )
+            frappe.db.commit()
+        except OperationalError:
+            # Reconnect and retry once
+            try:
+                frappe.db.close()
+            except Exception:
+                pass
+            frappe.db.connect()
+            frappe.db.set_value(
+                "Item Sync Settings",
+                s.name,
+                "last_sync",
+                last_sync_ts,
+                update_modified=False
+            )
+            frappe.db.commit()
         except Exception as e:
             errors.append(f"Failed to update last_sync: {e}")
 
         total_sent += sent
         server_results.append({"site_url": s.site_url, "sent": sent, "errors": errors})
-
-    frappe.db.commit()
 
     error_servers = sum(1 for r in server_results if r.get("errors"))
     status = "synced" if not (total_sent == 0 and error_servers == len(rows)) else "failed"
