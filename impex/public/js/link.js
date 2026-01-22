@@ -101,13 +101,13 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlLin
 						if (!window.Cypress && !me.$input.is(":focus")) {
 							return;
 						}
-						r.results = me.merge_duplicates(r.results);
+						r.message = me.merge_duplicates(r.message || []);
 
 						// show filter description in awesomplete
 						if (args.filters) {
 							let filter_string = me.get_filter_description(args.filters);
 							if (filter_string) {
-								r.results.push({
+								r.message.push({
 									html: `<span class="text-muted" style="line-height: 1.5">${filter_string}</span>`,
 									value: "",
 									action: () => {},
@@ -118,7 +118,7 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlLin
 						if (!me.df.only_select) {
 							if (frappe.model.can_create(doctype)) {
 								// new item
-								r.results.push({
+								r.message.push({
 									html:
 										"<span class='text-primary link-option'>" +
 										"<i class='fa fa-plus' style='margin-right: 5px;'></i> " +
@@ -136,13 +136,13 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlLin
 								frappe.ui.form.ControlLink.link_options(me);
 
 							if (custom__link_options) {
-								r.results = r.results.concat(custom__link_options);
+								r.message = r.message.concat(custom__link_options);
 							}
 
 							// advanced search
 							if (locals && locals["DocType"]) {
 								// not applicable in web forms
-								r.results.push({
+								r.message.push({
 									html:
 										"<span class='text-primary link-option'>" +
 										"<i class='fa fa-search' style='margin-right: 5px;'></i> " +
@@ -154,9 +154,12 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlLin
 								});
 							}
 						}
-						me.$input.cache[doctype][term] = r.results;
+						me.$input.cache[doctype][term] = r.message;
 						me.awesomplete.list = me.$input.cache[doctype][term];
 						me.toggle_href(doctype);
+						r.message.forEach((item) => {
+							frappe.utils.add_link_title(doctype, item.value, item.label);
+						});
 					},
 				});
 			}, 500)

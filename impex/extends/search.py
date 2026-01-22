@@ -51,7 +51,7 @@ def search_link(
         ignore_user_permissions=ignore_user_permissions,
     )
 
-    frappe.response["results"] = build_for_autosuggest(
+    frappe.response["message"] = build_for_autosuggest(
         frappe.response["values"], doctype=doctype
     )
     del frappe.response["values"]
