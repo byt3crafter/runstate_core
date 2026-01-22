@@ -189,6 +189,13 @@ frappe.provide('impex.rule_prices');
         };
 
         const load_rows = async () => {
+            // Skip loading for unsaved documents
+            if (frm.is_new()) {
+                allRows = [];
+                page = 1;
+                render_paged_rows();
+                return;
+            }
             const r = await frappe.call({
                 method: 'impex.impex.doctype.price_change.price_change.get_rule_prices',
                 args: {
