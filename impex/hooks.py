@@ -1,7 +1,7 @@
 from . import __version__ as app_version
 
 app_name = "impex"
-app_title = "Impex"
+app_title = "Runstate"
 app_publisher = "Yousef Restom"
 app_description = "Impex Customizations"
 app_email = "youssef@totrox.com"
