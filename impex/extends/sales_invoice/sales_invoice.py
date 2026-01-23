@@ -23,8 +23,6 @@ def on_submit(doc, method):
 		if is_frozen:
 			frappe.throw(f"""Error: Item {item.item_code} is currently being reconciled. 
 				No transaction can be made against it.""")
-	if doc.is_pos:
-		rename_invoice(doc)
 
 def rename_invoice(doc, max_retries=3):
 	retry_count = 0
